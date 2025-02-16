@@ -1,0 +1,4 @@
+# Git ignore для сервиса Python
+__pycache__/
+*/venv/
+.dockerignore
