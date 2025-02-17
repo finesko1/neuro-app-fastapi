@@ -12,5 +12,5 @@ COPY . .
 
 EXPOSE 8000
 
-#ENTRYPOINT ["./venv/bin/uvicorn"]
-#CMD ["app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+ENTRYPOINT ["./venv/bin/uvicorn"]
+CMD ["app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

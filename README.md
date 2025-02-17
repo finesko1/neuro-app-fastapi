@@ -17,7 +17,8 @@ To run fastapi on a local machine you need:
 	- git init
 	- git clone https://github.com/finesko1/neuro-app-fastapi.git
 - run docker desktop and then:
-	- docker build .
 	- docker-compose -p neuro-python build *(to display the process use --progress=plain)*
+	- for work into container:
+        - docker exec -it -p neuro-python /bin/sh *(for windows system)*
 
 The container with the application is running on port 8000!

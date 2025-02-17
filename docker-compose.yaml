@@ -8,8 +8,8 @@ services:
     volumes:
       - ./:/usr/src/app
       - ./venv/:/usr/src/app/venv
-    entrypoint: [".venv/bin/uvicorn"]
-    command: [ "app:app", "--host", "0.0.0.0", "--port", "8000", "--reload" ]
+    #entrypoint: ["./venv/bin/uvicorn"]
+    #command: [ "app:app", "--host", "0.0.0.0", "--port", "8000", "--reload" ]
     environment:
       - FASTAPI_APP=app:app
       - ENV=development
