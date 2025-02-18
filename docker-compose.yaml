@@ -2,18 +2,16 @@ services:
   web:
     build:
       context: .
-      dockerfile: ./Dockerfile
-    container_name: python
-    ports:
-      - "8000:8000"
+      dockerfile: Dockerfile
+    command: uvicorn app:app --host 0.0.0.0 --reload 
     volumes:
-      - ./:/usr/src/app
-    command: uvicorn app:app --host 0.0.0.0 --reload
-    environment:
-      - FASTAPI_APP=app:app
-      - ENV=development
+      - .:/app
+    ports:
+      - 8008:8000
     networks:
       - app-network
+    environment:
+      - WATCHFILES_FORCE_POLLING=true  
 
 networks:
   app-network:
