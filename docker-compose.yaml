@@ -3,13 +3,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: uvicorn app:app --host 0.0.0.0
+    command: uvicorn app:app --host 0.0.0.0 --reload 
     volumes:
       - .:/app
     ports:
       - 8008:8000
     networks:
       - app-network
+    environment:
+      - WATCHFILES_FORCE_POLLING=true  
 
 networks:
   app-network:
