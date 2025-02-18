@@ -6,6 +6,10 @@ app = FastAPI()
 def read_root():
     return {"Hello": "World"}
 
+@app.get("/helloWord")
+def read_root():
+    return {"Hello": "World"}
+
 @app.get("/docs")
 def read_doc():
     return 
