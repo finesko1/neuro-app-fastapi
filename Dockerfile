@@ -1,12 +1,9 @@
-FROM python:3.12.9-alpine3.21 AS python
+FROM python:3.12-slim
 
-WORKDIR /usr/src/app
+WORKDIR /app
 
-COPY requirements.txt ./
-RUN python -m venv venv && \
-    . venv/bin/activate && \
-    pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt .
+RUN pip install --upgrade pip && \
+pip install --no-cache-dir -r requirements.txt
 
 COPY . .
-
