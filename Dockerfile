@@ -1,4 +1,4 @@
-FROM python:3.9-slim AS python
+FROM python:3.12.9-alpine3.21 AS python
 
 WORKDIR /usr/src/app
 
@@ -10,7 +10,3 @@ RUN python -m venv venv && \
 
 COPY . .
 
-EXPOSE 8000
-
-#ENTRYPOINT ["./venv/bin/uvicorn"]
-#CMD ["app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
