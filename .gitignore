@@ -5,3 +5,4 @@ venv
 .dockerignore
 .codiumai
 docker-compose.yaml
+.env
