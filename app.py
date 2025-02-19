@@ -12,7 +12,8 @@ def status():
 def metrics():
     pass
 #для сообщений
-@app.post("/messages") #создать сообщение
+@app.post("/messages",
+          summary="Cоздать сообщение")
 def read_doc():
     pass 
 #  Примерчик структурированного запроса
@@ -22,25 +23,26 @@ def read_doc():
 #   "sender"/"role": "user",
 #   "metadata": {}
 # }
-@app.get("/messages/{message_id}") #получить сообщение
+@app.get("/messages/{message_id}",summary="Получить сообщение") 
 def read_doc():
     pass 
 
-@app.get("/messages/chat/{chat_id}") #получить сообщения чата
+@app.get("/messages/chat/{chat_id}",summary="Получить сообщения чата")
 def chat_history():
     pass
 
-@app.put("/messages/{message_id}") #обновить сообщение
+@app.put("/messages/{message_id}",summary="обновить сообщение")
 def update_message():
     pass
 
-@app.delete("/messages/{message_id}") #удалить сообщение
+@app.delete("/messages/{message_id}",summary="Удалить сообщение") 
 def delete_message():
     pass
 
 
 #Для ЛЛМ
-@app.post("/llm/generate") #генерация ответа
+@app.post("/llm/generate",
+          summary="Генерация ответа") 
 def generate():
     pass
 #  Примерчик структурированного запроса
@@ -55,16 +57,18 @@ def generate():
 # }
 # 
 
-@app.post("/llm/switch-model") #сменить модель
+@app.post("/llm/switch-model",
+          summary="Cменить модель")
 def switch_model():
     pass
 
-@app.get("/llm/models") #список моделей
+@app.get("/llm/models",summary="Список моделей")
 def models_list():
     pass
 
 #для эмбедингов
-@app.post("/embeddings") #генерация  эмбединга для сообщения
+@app.post("/embeddings",
+          summary="Генерация  эмбединга для сообщения")
 def embeddings():
     pass
 #  Примерчик структурированного запроса
@@ -73,12 +77,14 @@ def embeddings():
 #   "model": "all-MiniLM-L12-v2"
 # }
 
-@app.get("/embeddings/models") #список моделей для генерации эмбеддингов
+@app.get("/embeddings/models",
+         summary="Cписок моделей для генерации эмбеддингов")
 def embedding_models_list():
     pass
 
 #Для хромы
-@app.post("/chroma/collections") #cоздать коллекцию
+@app.post("/chroma/collections",
+          summary="Создать коллекцию")
 def add_collection():
     pass
 #  Примерчик структурированного запроса
@@ -89,30 +95,38 @@ def add_collection():
 #     "embedding_model": "all-MiniLM-L6-v2"
 #   }
 # }
-@app.delete("/chroma/collections/{name}") #удалить коллекцию
+@app.delete("/chroma/collections/{name}",
+            summary="Удалить коллекцию")
 def delete_collection():
     pass
-@app.post("/chroma/collections/{name}/documents") #добавить документ в коллекцию
+@app.post("/chroma/collections/{name}/documents",
+          summary="Добавить документ в коллекцию")
 def add_to_collection():
     pass
-@app.get("/chroma/collections/{name}/search") #семантический поиск по коллекции
+@app.get("/chroma/collections/{name}/search",
+         summary="Cемантический поиск по коллекции")
 def semantic_search():
     pass
 
 #Редис
-@app.get("/cache/{key}") #получить значение по ключу
+@app.get("/cache/{key}",
+         summary="Получить значение по ключу")
 def get_value():
     pass
-@app.post("/cache/{key}") #установить значение
+@app.post("/cache/{key}",
+          summary="Установить значение")
 def add_value():
     pass
-@app.delete("/cache/{key}") #удалить значене
+@app.delete("/cache/{key}",
+            summary="Удалить значене")
 def delete_value():
     pass
-@app.delete("/cache/invalidate") #инвалидатор кеша (по шаблону или ключу)
+@app.delete("/cache/invalidate",
+            summary="Инвалидатор кеша (по шаблону или ключу)")
 def invalidate_cache():
     pass
 
-@app.get("/cache/stats") #статистика по кешу
+@app.get("/cache/stats",
+         summary="Cтатистика по кешу")
 def statistic_cache():
     pass
