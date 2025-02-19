@@ -1,0 +1,36 @@
+# Команды сборки сервисов larave-vite-vue и fastapi
+.PHONY: build-all build-laravel-vue build-fastapi
+build-all: build-laravel-vue build-fastapi
+# Сборка сервиса laravel-vue-vite-fpm
+build-laravel-vue:
+	cd neuro-app-laravel-vue && \
+	docker-compose -p neuro build --progress=plain --no-cache
+# Сборка сервиса fastapi
+build-fastapi:
+	cd neuro-app-fastapi && \
+	docker-compose -p neuro build --progress=plain --no-cache
+
+# Команды запуска сервиса larave-vite-vue и fastapi
+.PHONY: up-all up-laravel-vue up-fastapi
+up-all: up-laravel-vue up-fastapi
+# Запуск сервиса laravel-vue
+up-laravel-vue:
+	cd ./neuro-app-laravel-vue && \
+	docker-compose -p neuro up -d 
+# Запуск сервиса fastapi
+up-fastapi:
+	cd ./neuro-app-fastapi && \
+	docker-compose -p neuro up -d 
+	
+# Команды остановки сервисов
+.PHONY: down-all down-laravel-vue down-fastapi
+down-all: down-laravel-vue down-fastapi
+# Остановка сервиса laravel-vue
+down-laravel-vue:
+	cd ./neuro-app-laravel-vue && \
+	docker-compose -p neuro down --remove-orphans
+# Остановка сервиса fastapi
+down-fastapi:
+	cd ./neuro-app-fastapi && \
+	docker-compose -p neuro down --remove-orphans
+	
