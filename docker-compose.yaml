@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: python
     command: uvicorn app:app --host 0.0.0.0 --reload 
     volumes:
       - .:/app
