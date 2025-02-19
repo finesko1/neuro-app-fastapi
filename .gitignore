@@ -6,3 +6,5 @@ venv
 .codiumai
 docker-compose.yaml
 .env
+.env.backup
+.env.production
