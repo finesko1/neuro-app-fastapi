@@ -1,4 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from database.connect import get_db
+
+# Импорт моделей из существующих файлов
+# Предполагается, что моделей Chat и Message (как в Snippet #1 и #2) вы уже создали
+from resources.models.chat.chat import Chat
+from resources.models.chat.message import Message
+from resources.controllers.chat.message_controller import get_chat_messages
 
 app = FastAPI()
 
@@ -26,9 +35,13 @@ def read_doc():
 def read_doc():
     pass 
 
-@app.get("/messages/chat/{chat_id}") #получить сообщения чата
-def chat_history():
-    pass
+@app.get("/messages/chat/{chat_id}", response_model=list) # получение сообщений чата
+def get_messages_by_chat(chat_id: int):
+    """
+    Получение списка сообщений по chat_id.
+    """
+    response = get_chat_messages(chat_id)
+    return response
 
 @app.put("/messages/{message_id}") #обновить сообщение
 def update_message():

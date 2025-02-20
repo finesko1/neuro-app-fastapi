@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
-from resources.models.chat.chat import Chat
-from resources.models.chat.message import Message
+from chat import Chat
+from message import Message
 
-def get_chat_messages(chat_id: int, session: Session) -> list[Message]:
+def get_chat_messages(chat_id: int) -> list[Message]:
     """
     Получает все сообщения для заданного чата из базы данных.
 
