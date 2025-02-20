@@ -10,7 +10,8 @@ def status():
     pass
 @app.get("/metrics")
 def metrics():
-    pass
+    return {"metrics":"none"}
+
 #для сообщений
 @app.post("/messages",
           summary="Cоздать сообщение")
