@@ -2,21 +2,33 @@ from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database.connect import get_db
+from sqlalchemy.sql import text
 
 # Импорт моделей из существующих файлов
-# Предполагается, что моделей Chat и Message (как в Snippet #1 и #2) вы уже создали
-from resources.models.chat.chat import Chat
-from resources.models.chat.message import Message
-from resources.controllers.chat.message_controller import get_chat_messages
+# # Предполагается, что моделей Chat и Message (как в Snippet #1 и #2) вы уже создали
+# from resources.models.chat.chat import Chat
+# from resources.models.chat.message import Message
+# from resources.controllers.chat.message_controller import get_chat_messages
 
 app = FastAPI()
+db = next(get_db())
 
 @app.get("/docs")
 def read_doc():
     pass 
 @app.get("/health")
-def status():
-    pass
+@app.get("/health")
+def status(db: Session = Depends(get_db)):
+    try:
+        result = db.execute(
+            text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
+        ).fetchall()
+        
+        tables = [row[0] for row in result]
+        return {"db": "connected", "tables": tables}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/metrics")
 def metrics():
     pass

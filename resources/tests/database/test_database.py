@@ -14,7 +14,7 @@ def test_database_connection():
     try:
         # Создаем сессию и выполняем простой запрос
         with next(get_db()) as db:
-            result = db.execute(text("SELECT 1"))
+            result = db.execute(text("SELECT *"))
             assert result.scalar() == 1
             logging.info("Подключение к базе данных выполнено")
     except OperationalError:
