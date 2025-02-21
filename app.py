@@ -8,24 +8,46 @@ from sqlalchemy.sql import text
 # # Предполагается, что моделей Chat и Message (как в Snippet #1 и #2) вы уже создали
 # from resources.models.chat.chat import Chat
 # from resources.models.chat.message import Message
-# from resources.controllers.chat.message_controller import get_chat_messages
+from resources.controllers.chat.message_controller import get_chat_messages
 
 app = FastAPI()
-db = next(get_db())
 
 @app.get("/docs")
 def read_doc():
     pass 
 @app.get("/health")
-@app.get("/health")
-def status(db: Session = Depends(get_db)):
+def status():
     try:
-        result = db.execute(
-            text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
-        ).fetchall()
-        
-        tables = [row[0] for row in result]
-        return {"db": "connected", "tables": tables}
+        with next(get_db()) as db:
+            result = db.execute(
+                text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
+            ).fetchall()
+
+            tables = [row[0] for row in result]
+            return {"db": "connected", "tables": tables}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/test")
+def test():
+    try:
+        with next(get_db()) as db:
+            result = db.execute(text("SELECT * FROM messages")).fetchall()
+            if not result:
+                return {"messages": []}  # Если нет сообщений, возвращаем пустой список
+            # Преобразуем кортежи в словари
+            messages = []
+            for row in result:
+                # Проверяем, что result не пустой
+                # Предполагаем, что у вас есть 3 столбца: id, content, created_at
+                message = {
+                    "id": row[0],
+                    "chat_id": row[1],
+                    "message": row[2]
+                }
+                messages.append(message)
+
+            return {"messages": messages}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

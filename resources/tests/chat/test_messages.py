@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 from app import app
 import logging
@@ -22,4 +23,4 @@ def test_chat_history():
     #assert response.json() == {"detail": "Chat not found"}
 
 if __name__ == "__main__":
-    test_chat_history()
+    pytest.main(["-v", "test_messages.py"])

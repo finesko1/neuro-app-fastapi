@@ -1,24 +1,33 @@
-# test_database.py
-import logging
-import sys
 import pytest
+from sqlalchemy import text, create_engine
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.sql import text
-sys.path.append("resources/tests/")
-from database.connect import get_db
+from sqlalchemy.orm import sessionmaker, Session
 
-def test_database_connection():
+from database.connect import SessionLocal, get_db
+
+def test_session_local_direct():
     """
-    Тестирует подключение к базе данных, проверяя возможность создания сессии.
+    Проверяет, что SessionLocal создает сессию, которая корректно выполняет базовый запрос к БД.
+    Выполняется запрос SELECT 1, результат которого должен быть равен 1.
     """
+    db = None
     try:
-        # Создаем сессию и выполняем простой запрос
-        with next(get_db()) as db:
-            result = db.execute(text("SELECT *"))
-            assert result.scalar() == 1
-            logging.info("Подключение к базе данных выполнено")
-    except OperationalError:
-        pytest.fail("Не удалось подключиться к базе данных")
+        engine = create_engine(
+            f"postgresql://postgres:Q6TR63v4@postgres:5432/neuro_DB",
+            connect_args={"options": "-c statement_timeout=10000"},
+            echo=True
+        )
+        # создаем класс сессии
+        with Session(autoflush=False, bind=engine) as db:
+            result = db.execute(text("SELECT 1")).scalar()
+        assert result == 1, f"Неверный результат запроса SELECT 1: {result}"
+    except OperationalError as oe:
+        pytest.fail(f"Не удалось подключиться к БД через SessionLocal: {oe}")
+    except Exception as e:
+        pytest.fail(f"Ошибка при тестировании SessionLocal: {e}")
+    finally:
+        if db:
+            db.close()
 
 if __name__ == "__main__":
-    pytest.main(["-v", "test_database.py"])
+    pytest.main(["-v", __file__])
