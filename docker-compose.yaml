@@ -8,12 +8,14 @@ services:
     volumes:
       - .:/app
     ports:
-      - 8008:8000
+      - "8000:8000"
     networks:
       - app-network
     environment:
-      - WATCHFILES_FORCE_POLLING=true  
+      - WATCHFILES_FORCE_POLLING=true
+      - PYTHONPATH=/app
 
 networks:
   app-network:
+    external: true
     driver: bridge
