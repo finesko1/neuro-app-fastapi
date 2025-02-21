@@ -7,7 +7,40 @@ def read_doc():
     pass 
 @app.get("/health")
 def status():
-    pass
+    try:
+        with next(get_db()) as db:
+            result = db.execute(
+                text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
+            ).fetchall()
+
+            tables = [row[0] for row in result]
+            return {"db": "connected", "tables": tables}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/test")
+def test():
+    try:
+        with next(get_db()) as db:
+            result = db.execute(text("SELECT * FROM messages")).fetchall()
+            if not result:
+                return {"messages": []}  # Если нет сообщений, возвращаем пустой список
+            # Преобразуем кортежи в словари
+            messages = []
+            for row in result:
+                # Проверяем, что result не пустой
+                # Предполагаем, что у вас есть 3 столбца: id, content, created_at
+                message = {
+                    "id": row[0],
+                    "chat_id": row[1],
+                    "message": row[2]
+                }
+                messages.append(message)
+
+            return {"messages": messages}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/metrics")
 def metrics():
     pass
@@ -23,26 +56,30 @@ def read_doc():
 #   "sender"/"role": "user",
 #   "metadata": {}
 # }
-@app.get("/messages/{message_id}",summary="Получить сообщение") 
+@app.get("/messages/{message_id}") #получить сообщение
 def read_doc():
     pass 
 
-@app.get("/messages/chat/{chat_id}",summary="Получить сообщения чата")
-def chat_history():
-    pass
+@app.get("/messages/chat/{chat_id}", response_model=list) # получение сообщений чата
+def get_messages_by_chat(chat_id: int):
+    """
+    Получение списка сообщений по chat_id.
+    """
+    #response = get_chat_messages(chat_id)
+    #return response
 
 @app.put("/messages/{message_id}",summary="обновить сообщение")
 def update_message():
     pass
 
-@app.delete("/messages/{message_id}",summary="Удалить сообщение") 
+@app.delete("/messages/{message_id}",summary="Удалить сообщение")
 def delete_message():
     pass
 
 
 #Для ЛЛМ
 @app.post("/llm/generate",
-          summary="Генерация ответа") 
+          summary="Генерация ответа")
 def generate():
     pass
 #  Примерчик структурированного запроса

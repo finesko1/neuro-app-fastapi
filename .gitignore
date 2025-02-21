@@ -5,6 +5,7 @@ venv
 .dockerignore
 .codiumai
 docker-compose.yaml
+Dockerfile
 .env
 .env.backup
 .env.production
