@@ -1,37 +1,21 @@
 import logging
-import os
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker, Session
-from dotenv import load_dotenv, find_dotenv
+from resources.helpers.environment_helper import EnvironmentHelper
+
+env = EnvironmentHelper()
 
 # Настройка логгирования
 logging.basicConfig(level=logging.INFO)
 
-# Попытка найти файл .env
-env_path = find_dotenv()
-
-if not env_path:
-    # Если тесты запускаются не из корня проекта, указываем относительный путь до .env
-    env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
-
-if not os.path.exists(env_path):
-    logging.warning("Файл .env не найден! Проверьте, что переменные окружения заданы.")
-else:
-    load_dotenv(env_path)
-    logging.info(f"Файл .env загружен из {env_path}")
-
 # Загружаем настройки для подключения к БД из переменных окружения
 # Используем значения по умолчанию для DB_HOST и DB_PORT
-DB_HOST = "postgres"
-DB_PORT = "5432"
-DB_DATABASE = os.environ.get("DB_DATABASE")
-DB_USERNAME = os.environ.get("DB_USERNAME")
-DB_PASSWORD = os.environ.get("DB_PASSWORD")
-
-# Проверяем, что обязательные переменные заданы
-if not DB_DATABASE or not DB_USERNAME or not DB_PASSWORD:
-    raise EnvironmentError("Отсутствуют необходимые переменные окружения (DB_DATABASE, DB_USERNAME, DB_PASSWORD) для подключения к БД.")
+DB_HOST = env.db_host
+DB_PORT = env.db_port
+DB_DATABASE = env.db_database
+DB_USERNAME = env.db_username
+DB_PASSWORD = env.db_password
 
 # Формирование строки подключения
 DATABASE_URL = f"postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_DATABASE}"
