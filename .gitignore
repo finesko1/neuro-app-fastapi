@@ -9,3 +9,7 @@ Dockerfile
 .env
 .env.backup
 .env.production
+.qodo
+.idea
+__pycache__
+uploads
