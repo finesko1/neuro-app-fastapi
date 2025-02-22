@@ -12,9 +12,10 @@ logger = logging.basicConfig(level=logging.INFO)
 class VectorStore:
     """Хрома."""
     
-    def __init__(self, embedding_model: str = "nomic-embed-text:latest"):
+    def __init__(self, collection_name: str, embedding_model: str = "nomic-embed-text:latest"):
         self.env = EnvironmentHelper()
-        self.embeddings = OllamaEmbeddings(model=embedding_model) or self.env.ollama_embedding_model
+        self.embeddings = OllamaEmbeddings(model=embedding_model) or OllamaEmbeddings(model=self.env.ollama_embedding_model)
+        self.collection_name = collection_name
         self.vector_db = None
     
     def create_vector_db(self, documents: List, collection_name: str = "local-rag") -> Chroma:
