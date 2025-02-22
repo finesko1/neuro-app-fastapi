@@ -17,7 +17,10 @@ pytest==7.4.4
 pytest-cov==4.1.0
 coverage==7.4.0
 pydantic
+pydantic-settings
 python-dotenv
 sqlalchemy
+psycopg
 psycopg2-binary
+asyncpg
 uvicorn
