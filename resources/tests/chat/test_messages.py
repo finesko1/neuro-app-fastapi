@@ -13,9 +13,8 @@ def test_chat_history():
     # Предполагаем, что chat_id 1 существует и возвращает ожидаемые данные
     response = client.get("/messages/chat/1")
     assert response.status_code == 200
-    #logging.info("Testing chat history endpoint")
-    logging.info(f"Response JSON: {response.json()}")
-    #assert response.json() == {"message": "Expected message content"}  # Замените на ожидаемый результат
+    #logging.info(response.json()[0])
+    assert response.json()[0]['id'] == 1
 
     # Тестируем случай, когда chat_id не существует
     #response = client.get("/messages/chat/9999")

@@ -1,46 +1,40 @@
-import logging
-from sqlalchemy import create_engine
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import sessionmaker, Session
-from resources.helpers.environment_helper import EnvironmentHelper
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
-env = EnvironmentHelper()
+from database.config import settings
 
-# Настройка логгирования
-logging.basicConfig(level=logging.INFO)
+# Создание подключений к БД
+sync_engine = create_engine(
+    url=settings.DATABASE_URL_psycopg,
+    echo=False,
+)
+async_engine = create_engine(
+    url=settings.DATABASE_URL_asyncpg,
+    echo=False,
+)
 
-# Загружаем настройки для подключения к БД из переменных окружения
-# Используем значения по умолчанию для DB_HOST и DB_PORT
-DB_HOST = env.db_host
-DB_PORT = env.db_port
-DB_DATABASE = env.db_database
-DB_USERNAME = env.db_username
-DB_PASSWORD = env.db_password
+session = sessionmaker(bind=sync_engine)
+async_session = sessionmaker(bind=async_engine)
 
-# Формирование строки подключения
-DATABASE_URL = f"postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_DATABASE}"
-logging.info(f"DATABASE_URL: {DATABASE_URL}")
+# Основа для моделей
+class Base(DeclarativeBase):
+    pass
 
-# Создаем движок SQLAlchemy с указанными настройками
-try:
-    engine = create_engine(
-        DATABASE_URL,
-        connect_args={"options": "-c statement_timeout=10000"}
-    )
-except SQLAlchemyError as e:
-    logging.error("Ошибка при создании движка SQLAlchemy", exc_info=True)
-    raise
 
-# Создаем фабрику сессий
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-def get_db():
-    """
-    Генератор сессий для работы с базой данных.
-    При каждом вызове создается новая сессия, которая гарантированно закрывается после использования.
-    """
-    db: Session = SessionLocal()
+# Проверка работы с БД
+def check_connect():
     try:
-        yield db
-    finally:
-        db.close()
+        # Проверка синхронного подключения
+        with sync_engine.connect() as db:
+            res = db.execute(text("SELECT VERSION()"))
+            print(f"Версия PostgreSQL: {res.scalar()}")
+
+        # Проверка сессии
+        with session() as db:
+            res = db.execute(text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';"))
+            tables = [row[0] for row in res]
+            print(f"Список таблиц: {tables}")
+
+    except Exception as e:
+        print(f"Произошла ошибка: {e}")
+        raise

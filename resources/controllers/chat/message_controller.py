@@ -1,42 +1,34 @@
 import logging
-import pytest
-from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm import Session
-from database.connect import get_db
-from sqlalchemy.sql import text
 
-#from chat import Chat
-#from message import Message
+from sqlalchemy import text
+
+from database.connect import session
+from resources.models.chat.messages import Messages
 
 def get_chat_messages(chat_id: int):
     """
     Получает все сообщения для заданного чата из базы данных.
 
+    Эта функция выполняет запрос к базе данных для извлечения всех сообщений, связанных с указанным идентификатором чата.
+    Если сообщения для данного чата не найдены, будет вызвано исключение ValueError.
+
     :param chat_id: Число, представляющее уникальный идентификатор чата.
     :type chat_id: int
-    :return: Список сообщений.
+    :return: Список сообщений, связанных с указанным чатом.
     :rtype: list
     :raises ValueError: Если сообщения для чата с указанным идентификатором не найдены.
     """
-    # Создаем сессию и выполняем выборку сообщений чата
-    with next(get_db()) as db:
-        try:
-            logging.info(f"chat_id: {chat_id}, тип: {type(chat_id)}")
-
-            # Выполняем SQL-запрос
-            result = db.execute(text("SELECT * FROM messages WHERE chat_id = :chat_id"), {"chat_id": chat_id})
-            messages = result.fetchall()  # Получаем все сообщения
-
-            # Проверяем, что сообщения найдены
-            if not messages:
-                raise ValueError("Сообщения для указанного chat_id не найдены")
-
-            logging.info("Сообщения найдены")
-            return messages  # Возвращаем все сообщения
-
-        except OperationalError as e:
-            logging.error(f"Ошибка подключения к базе данных: {e}")
-            pytest.fail("Не удалось подключиться к базе данных")
-        except Exception as e:
-            logging.error(f"Произошла ошибка: {e}")
-            pytest.fail("Произошла ошибка при выполнении запроса")
+    with session() as db:
+        #result = db.execute(text("SELECT * FROM messages")).all()
+        result = db.query(Messages).all()
+        messages = []
+        for message in result:
+            messages.append({
+                "id": message.id,
+                "role": message.role,
+                "chat_id": message.chat_id,
+                "content": message.content,
+            })
+        if not result:
+            raise ValueError(f"No messages found for chat_id {chat_id}")
+        return messages

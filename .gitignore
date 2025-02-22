@@ -1,9 +1,11 @@
 # Git ignore для сервиса Python
 __pycache__/
 */venv/
-/venv
+venv
 .dockerignore
 .codiumai
 docker-compose.yaml
-.idea
+Dockerfile
 .env
+.env.backup
+.env.production
