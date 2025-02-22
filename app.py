@@ -2,9 +2,17 @@
 from fastapi import FastAPI, HTTPException
 from sqlalchemy import text
 from database.connect import session
-from resources.controllers.chat.message_controller import get_chat_messages
+from resources.controllers.chat.message_controller import MessageController
 
-app = FastAPI()
+app = FastAPI(
+    title="Neuro API",
+    description="API for Neuro App",
+    version="0.1.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+)
+messages = MessageController()
+
 
 @app.get("/")
 def read_root():
@@ -12,7 +20,8 @@ def read_root():
 
 @app.get("/docs")
 def read_doc():
-    pass 
+    pass
+
 @app.get("/health")
 def status():
     try:
@@ -28,37 +37,53 @@ def status():
 
 @app.get("/metrics")
 def metrics():
-    return {"metrics":"none"}
+    pass
 
-#для сообщений
-@app.post("/messages",
-          summary="Cоздать сообщение")
-def read_doc():
-    pass 
-#  Примерчик структурированного запроса
-# {
-#   "chat_id": "uuid",
-#   "content": "Привет! Как дела?",
-#   "sender"/"role": "user",
-#   "metadata": {}
-# }
-@app.get("/messages/{message_id}") #получить сообщение
-def read_doc():
-    pass 
 
-@app.get("/messages/chat/{chat_id}", response_model=list) # получение сообщений чата
+@app.get("/chats/{chat_id}/messages", response_model=list, summary="Получить сообщения чата")
 def get_messages_by_chat(chat_id: int):
     """
     Получение списка сообщений по chat_id.
+
+    :param chat_id: Идентификатор чата.
+    :type int
+
+    :return: Сообщения чата
+    rtype: list
     """
-    response = get_chat_messages(chat_id)
+    response = messages.get_chat_messages(chat_id)
     return response
 
-@app.put("/messages/{message_id}",summary="обновить сообщение")
+@app.post("/chats/{chat_id}/messages", summary="Cоздать сообщение в чате")
+def send_message(chat_id: int):
+    """
+    Отправление сообщения на сервер.
+
+    :param chat_id:
+    :return: Код состояния
+    """
+
+@app.get("/chats/{chat_id}/messages/{message_id}",summary="Получить сообщение чата")
+def get_message_by_chat(chat_id: int, message_id: int) -> dict:
+    """
+    Получение сообщения по chat_id
+
+    :param chat_id: Идентификатор чата.
+    :type int
+
+    :param message_id: Идентификатор сообщения.
+    :type int
+    :return: Сообщение id из чата chat_id
+    rtype: dict
+    """
+    response = messages.get_chat_message(chat_id, message_id)
+    return response
+
+@app.post("/chats/{chat_id}/messages/{message_id}",summary="Обновить сообщение чата")
 def update_message():
     pass
 
-@app.delete("/messages/{message_id}",summary="Удалить сообщение")
+@app.delete("/chats/{chat_id}/messages/{message_id}",summary="Удалить сообщение чата")
 def delete_message():
     pass
 
