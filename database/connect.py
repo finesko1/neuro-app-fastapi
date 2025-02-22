@@ -1,4 +1,5 @@
 from sqlalchemy import create_engine, text
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 from database.config import settings
@@ -8,13 +9,13 @@ sync_engine = create_engine(
     url=settings.DATABASE_URL_psycopg,
     echo=False,
 )
-async_engine = create_engine(
+async_engine = create_async_engine(
     url=settings.DATABASE_URL_asyncpg,
     echo=False,
 )
 
 session = sessionmaker(bind=sync_engine)
-async_session = sessionmaker(bind=async_engine)
+async_session = async_sessionmaker(bind=async_engine, expire_on_commit=False)
 
 # Основа для моделей
 class Base(DeclarativeBase):

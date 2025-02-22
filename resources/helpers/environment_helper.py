@@ -55,6 +55,19 @@ class EnvironmentHelper:
     def ollama_default_prompt(self) -> str:
         return self._get_env("OLLAMA_DEFAULT_PROMPT")
     
+    @property
+    def ollama_embedding_model(self) -> str:
+        return self._get_env("OLLAMA_EMBEDDING_MODEL")
+    
+    @property
+    def chroma_host(self) -> str:
+        return self._get_env("CHROMA_HOST")
+    
+    @property
+    def chroma_port(self) -> str:
+        return self._get_env("CHROMA_PORT")
+    
+
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)

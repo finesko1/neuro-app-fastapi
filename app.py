@@ -1,13 +1,19 @@
 import logging
 from typing import List, Optional
-
-from fastapi.responses import JSONResponse, Response
-from fastapi import FastAPI, HTTPException, Form, Request
 from pydantic import BaseModel
+from fastapi import FastAPI, File, HTTPException, UploadFile, status
+from fastapi.responses import JSONResponse, Response
 from sqlalchemy import text
 from database.connect import session
 from resources.controllers.chat.message_controller import MessageController
-from resources.models.chat.messages import Messages
+from resources.controllers.llm.llm_controller import LLMController
+from resources.models.llm.chroma.collection_create import CollectionCreate
+from resources.models.llm.chroma.search_query import SearchQuery
+from resources.controllers.llm.vector_db_controller import VectorDbController
+from resources.controllers.llm.document_controller import DocumentController
+from resources.models.llm.chroma.document_response import DocumentResponse
+from langchain_ollama import OllamaEmbeddings
+from langchain_core.documents import Document
 
 app = FastAPI(
     title="Neuro API",
@@ -17,6 +23,9 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 messages = MessageController()
+chroma = VectorDbController()
+document_controller = DocumentController()
+llm = LLMController()
 
 
 @app.get("/")
@@ -154,49 +163,108 @@ def embedding_models_list():
 
 #Для хромы
 @app.post("/chroma/collections",
-          summary="Создать коллекцию")
-def add_collection():
-    pass
-#  Примерчик структурированного запроса
-# {
-#   "name": "science_articles",
-#   "metadata": {
-#     "description": "Научные статьи по физике",
-#     "embedding_model": "all-MiniLM-L6-v2"
-#   }
-# }
+          summary="Создать коллекцию",
+          response_description="Информация о созданной коллекции")
+async def add_collection(collection_data: CollectionCreate):
+    """
+    Создание новой коллекции в векторной базе данных(Chromadb).
+
+    Args:
+        collection_data (CollectionCreate): Данные для создания коллекции
+            - name: str - название коллекции
+            - metadata: Optional[Dict] - метаданные коллекции
+
+    Returns:
+        dict: Результат операции создания коллекции
+            - status: str - статус операции
+            - message: str - сообщение о результате
+
+    Raises:
+        HTTPException:
+            - 409: Если коллекция уже существует
+            - 500: При внутренней ошибке сервера
+    """
+    response = await chroma.add_collection(collection_data)
+    return response
+
 @app.delete("/chroma/collections/{name}",
             summary="Удалить коллекцию")
-def delete_collection():
-    pass
+async def delete_collection(collection_name:str):
+    """
+    Удаление коллекции из векторной базы данных.
+
+    Args:
+        collection_name (str): Название коллекции для удаления
+
+    Returns:
+        dict: Результат операции удаления
+            - status: str - статус операции
+            - message: str - сообщение о результате
+
+    Raises:
+        HTTPException:
+            - 404: Если коллекция не найдена
+            - 500: При внутренней ошибке сервера
+    """
+    response = await chroma.delete_collection(collection_name)
+    return response
+
 @app.post("/chroma/collections/{name}/documents",
           summary="Добавить документ в коллекцию")
-def add_to_collection():
-    pass
-@app.get("/chroma/collections/{name}/search",
+async def add_to_collection(name:str, document_chunks:List[Document]):
+    """
+    Добавление документа в указанную коллекцию.
+
+    Args:
+        name (str): Название коллекции
+        document_chunks (List[Document]): Документ для добавления
+        ebbeding_model (OllamaEmbeddings): ембеддинг модель
+
+    Returns:
+        dict: Результат операции добавления
+            - status: str - статус операции
+            - message: str - сообщение о результате
+
+    Raises:
+        HTTPException:
+            - 404: Если коллекция не найдена
+            - 500: При внутренней ошибке сервера
+    """
+    response = await chroma.add_to_collection(name=name,document_chunks=document_chunks)
+    return response
+
+@app.post("/chroma/collections/{name}/search",
          summary="Cемантический поиск по коллекции")
-def semantic_search():
-    pass
+async def semantic_search(name:str,search_query: SearchQuery):
+    """
+    Выполнение семантического поиска в указанной коллекции.
 
-#Редис
-@app.get("/cache/{key}",
-         summary="Получить значение по ключу")
-def get_value():
-    pass
-@app.post("/cache/{key}",
-          summary="Установить значение")
-def add_value():
-    pass
-@app.delete("/cache/{key}",
-            summary="Удалить значене")
-def delete_value():
-    pass
-@app.delete("/cache/invalidate",
-            summary="Инвалидатор кеша (по шаблону или ключу)")
-def invalidate_cache():
-    pass
+    Args:
+        name (str): Название коллекции
+        search_query (SearchQuery): Параметры поискового запроса
+            - query: str - текст запроса
+            - n_results: int - количество результатов (по умолчанию 5)
 
-@app.get("/cache/stats",
-         summary="Cтатистика по кешу")
-def statistic_cache():
-    pass
+    Returns:
+        dict: Результаты поиска
+            - status: str - статус операции
+            - results: List - найденные документы
+
+    Raises:
+        HTTPException:
+            - 404: Если коллекция не найдена
+            - 500: При внутренней ошибке сервера
+    """
+    response = await chroma.semantic_search(name=name,search_query=search_query)
+    return response
+
+@app.post("/test/add-doc")
+async def test():
+    """Тестовый метод
+
+    Returns:
+        Возвращает добавленные в хрому документы, далее можно семантический поиск выполнить
+    """
+    chunks = await get_document_chunks("лаб3трпо.pdf")
+    response = await chroma.add_to_collection(name="test123",document_chunks=chunks)
+    return response
