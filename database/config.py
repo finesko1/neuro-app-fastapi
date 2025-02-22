@@ -64,3 +64,4 @@ class Settings(BaseSettings):
 
 #localhost, 54321 - локально; postgres + 5432 для доступа из контейнера
 settings = Settings(DB_HOST_outer='postgres', DB_PORT=5432)
+#settings = Settings(DB_HOST_outer='localhost', DB_PORT=54321)
