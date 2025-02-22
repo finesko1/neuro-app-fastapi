@@ -1,6 +1,14 @@
-from fastapi import FastAPI
+
+from fastapi import FastAPI, HTTPException
+from sqlalchemy import text
+from database.connect import session
+from resources.controllers.chat.message_controller import get_chat_messages
 
 app = FastAPI()
+
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
 
 @app.get("/docs")
 def read_doc():
@@ -8,36 +16,13 @@ def read_doc():
 @app.get("/health")
 def status():
     try:
-        with next(get_db()) as db:
+        with session() as db:
             result = db.execute(
                 text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
             ).fetchall()
 
             tables = [row[0] for row in result]
             return {"db": "connected", "tables": tables}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/test")
-def test():
-    try:
-        with next(get_db()) as db:
-            result = db.execute(text("SELECT * FROM messages")).fetchall()
-            if not result:
-                return {"messages": []}  # Если нет сообщений, возвращаем пустой список
-            # Преобразуем кортежи в словари
-            messages = []
-            for row in result:
-                # Проверяем, что result не пустой
-                # Предполагаем, что у вас есть 3 столбца: id, content, created_at
-                message = {
-                    "id": row[0],
-                    "chat_id": row[1],
-                    "message": row[2]
-                }
-                messages.append(message)
-
-            return {"messages": messages}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -65,8 +50,8 @@ def get_messages_by_chat(chat_id: int):
     """
     Получение списка сообщений по chat_id.
     """
-    #response = get_chat_messages(chat_id)
-    #return response
+    response = get_chat_messages(chat_id)
+    return response
 
 @app.put("/messages/{message_id}",summary="обновить сообщение")
 def update_message():
