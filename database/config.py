@@ -1,5 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from resources.helpers.environment_helper import EnvironmentHelper
 
+env = EnvironmentHelper()
 
 class Settings(BaseSettings):
     """
@@ -28,11 +30,11 @@ class Settings(BaseSettings):
     Этот класс наследует BaseSettings из библиотеки Pydantic,
     что позволяет загружать настройки из переменных окружения или файлов конфигурации.
     """
-    DB_HOST: str
-    DB_PORT: int
-    DB_USER: str
-    DB_PASSWORD: str
-    DB_NAME: str
+    DB_HOST_outer: str = "localhost"
+    DB_PORT: int = env.db_port
+    DB_USERNAME: str = env.db_username
+    DB_PASSWORD: str = env.db_password
+    DB_NAME: str = env.db_database
 
     @property
     def DATABASE_URL_asyncpg(self) -> str:
@@ -40,11 +42,12 @@ class Settings(BaseSettings):
         Получение URL для асинхронного подключения к базе данных PostgreSQL (драйвер asyncpg)
 
         Формат URL:
-        postgresql://<DB_USER>/<DB_PASSWORD>@<DB_HOST>:<DB_PORT>/<DB_NAME>
+            postgresql://<DB_USERNAME>/<DB_PASSWORD>@<DB_HOST>:<DB_PORT>/<DB_NAME>
+
         Returns:
             str: URL для подключения к PostgreSQL
         """
-        return f"postgresql+asyncpg://{self.DB_USER}/{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        return f"postgresql+asyncpg://{self.DB_USERNAME}:{self.DB_PASSWORD}@{self.DB_HOST_outer}:{self.DB_PORT}/{self.DB_NAME}"
 
     @property
     def DATABASE_URL_psycopg(self) -> str:
@@ -52,14 +55,12 @@ class Settings(BaseSettings):
         Получение URL для синхронного подключения к базе данных PostgreSQL (драйвер psycopg)
 
         Формат URL:
-        postgresql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>:<DB_PORT>/<DB_NAME>
+            postgresql://<DB_USERNAME>:<DB_PASSWORD>@<DB_HOST>:<DB_PORT>/<DB_NAME>
+
         Returns:
             str: URL для подключения к PostgreSQL
         """
-        return f"postgresql+psycopg://{self.DB_USER}/{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        return f"postgresql+psycopg://{self.DB_USERNAME}:{self.DB_PASSWORD}@{self.DB_HOST_outer}:{self.DB_PORT}/{self.DB_NAME}"
 
-    model_config = SettingsConfigDict(env_file="../.env")
-
-
-settings = Settings()
-
+#localhost, 54321 - локально; postgres + 5432 для доступа из контейнера
+settings = Settings(DB_HOST_outer='postgres', DB_PORT=5432)
