@@ -1,8 +1,13 @@
+import logging
+from typing import List, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse, Response
+from fastapi import FastAPI, HTTPException, Form, Request
+from pydantic import BaseModel
 from sqlalchemy import text
 from database.connect import session
 from resources.controllers.chat.message_controller import MessageController
+from resources.models.chat.messages import Messages
 
 app = FastAPI(
     title="Neuro API",
@@ -54,17 +59,27 @@ def get_messages_by_chat(chat_id: int):
     response = messages.get_chat_messages(chat_id)
     return response
 
+
+class Message(BaseModel):
+    id: Optional[int] = None
+    role: str
+    chat_id: int
+    content: str
+    model: Optional[str] = None
 @app.post("/chats/{chat_id}/messages", summary="Cоздать сообщение в чате")
-def send_message(chat_id: int):
+async def send_message(chat_id: int, request: Message) -> JSONResponse:
     """
     Отправление сообщения на сервер.
 
-    :param chat_id:
-    :return: Код состояния
+    :param chat_id: ID чата
+    :param request: Объект запроса
+    :return: Результат, код состояния
     """
+    response = await messages.put_chat_message(chat_id, request)
+    return JSONResponse(content={"message": response}, status_code=201)
 
 @app.get("/chats/{chat_id}/messages/{message_id}",summary="Получить сообщение чата")
-def get_message_by_chat(chat_id: int, message_id: int) -> dict:
+def get_message_by_chat(chat_id: int, message_id: int) -> JSONResponse:
     """
     Получение сообщения по chat_id
 
@@ -77,16 +92,23 @@ def get_message_by_chat(chat_id: int, message_id: int) -> dict:
     rtype: dict
     """
     response = messages.get_chat_message(chat_id, message_id)
-    return response
+    return JSONResponse(content={"message": response}, status_code=200)
 
 @app.post("/chats/{chat_id}/messages/{message_id}",summary="Обновить сообщение чата")
 def update_message():
     pass
 
 @app.delete("/chats/{chat_id}/messages/{message_id}",summary="Удалить сообщение чата")
-def delete_message():
-    pass
+async def delete_message(chat_id: int, message_id: int):
+    """
+    Удаление сообщения на сервере.
 
+    :param chat_id: ID чата
+    :param message_id: ID сообщения
+    :return: Код состояния
+    """
+    response = await messages.delete_chat_message(chat_id, message_id)
+    return Response(status_code=204)
 
 #Для ЛЛМ
 @app.post("/llm/generate",
