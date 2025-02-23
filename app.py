@@ -173,14 +173,82 @@ def embeddings():
 @app.get("/embeddings/models",
          summary="Cписок моделей для генерации эмбеддингов")
 def embedding_models_list():
-    embedding_models = llm.get_embedding_models()
-    if embedding_models:
-        # {message: "LLM embedding models get successfully", models: [{"name": "nomic-embed-text:latest"}]}
-        return JSONResponse(content={
-            'message': "LLM embedding models get successfully",
-            'models': embedding_models}, status_code=200)
-    else:
-        return JSONResponse(content={"message": "LLM models get failed"}, status_code=404)
+    pass
+
+#Для документов
+
+@app.post("/files",
+          summary="Загрузить документ",
+          response_description="Информация о загруженном документе",
+          response_model=DocumentResponse)
+async def upload_file(file: UploadFile = File(...)):
+    """
+    Загрузка документа на сервер.
+
+    Args:
+        file (UploadFile): Загружаемый файл (PDF)
+
+    Returns:
+        DocumentResponse: Информация о загруженном документе
+            - status: str - статус операции
+            - message: str - сообщение о результате
+            - document_id: str - идентификатор документа
+
+    Raises:
+        HTTPException: 
+            - 400: Если формат файла не поддерживается
+            - 500: При внутренней ошибке сервера
+    """
+    response = await document_controller.upload_document(file)
+    return response
+
+@app.get("/files/{id}/get",
+         summary="Получить чанки документа",
+         response_description="Список чанков документа",
+         response_model=List[Document])
+async def get_document_chunks(id: str):
+    """
+    Получение документа, разделенного на чанки.
+
+    Args:
+        id (str): Идентификатор документа
+
+    Returns:
+        List[Document]: Список чанков документа, где каждый чанк содержит:
+            - page_content: str - текстовое содержимое
+            - metadata: dict - метаданные чанка
+
+    Raises:
+        HTTPException:
+            - 404: Если документ не найден
+            - 500: При внутренней ошибке сервера
+    """
+    response = await document_controller.get_document_chunks(id)
+    return response
+
+@app.delete("/files/{id}",
+            summary="Удалить документ",
+            response_description="Информация об удалении документа",
+            response_model=DocumentResponse)
+async def delete_file(id: str):
+    """
+    Удаление документа с сервера.
+
+    Args:
+        id (str): Идентификатор документа
+
+    Returns:
+        DocumentResponse: Результат удаления документа
+            - status: str - статус операции
+            - message: str - сообщение о результате
+
+    Raises:
+        HTTPException:
+            - 404: Если документ не найден
+            - 500: При внутренней ошибке сервера
+    """
+    response = await document_controller.delete_document(id)
+    return response
 #Для хромы
 @app.post("/chroma/collections",
           summary="Создать коллекцию",
@@ -200,10 +268,10 @@ async def add_collection(collection_data: CollectionCreate):
             - message: str - сообщение о результате
 
     Raises:
-        HTTPException:
+        HTTPException: 
             - 409: Если коллекция уже существует
             - 500: При внутренней ошибке сервера
-    """
+    """    
     response = await chroma.add_collection(collection_data)
     return response
 
@@ -284,7 +352,7 @@ async def test():
 
     Returns:
         Возвращает добавленные в хрому документы, далее можно семантический поиск выполнить
-    """
+    """    
     chunks = await get_document_chunks("лаб3трпо.pdf")
     response = await chroma.add_to_collection(name="test123",document_chunks=chunks)
     return response
