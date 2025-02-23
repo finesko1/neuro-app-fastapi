@@ -115,4 +115,26 @@ class MessageController:
                 await db.commit()
                 return "Сообщение успешно удалено"
             else:
-                return "Сообщения не существует"
+                raise HTTPException(status_code=404, detail=f"No messages (id: {message_id}) found for (chat_id: {chat_id}).")
+
+    async def update_chat_message(self, chat_id: int, message_id: int, request) -> str:
+        """
+        Обновляет сообщение в чате БД
+
+        :param chat_id: ID чата
+        :param message_id: ID сообщения
+        :param request: STR новое содержимое
+        :return: Результат операции
+        """
+        async with async_session() as db:
+            message = await db.execute(
+                select(Messages).where(Messages.chat_id == chat_id, Messages.id == message_id)
+            )
+            message = message.scalars().first()
+            if message:
+                message.content = request.content
+                db.add(message)
+                await db.commit()
+                return "Сообщение успешно изменено"
+            else:
+                raise HTTPException(status_code=404, detail=f"No messages (id: {message_id}) found for (chat_id: {chat_id}).")
