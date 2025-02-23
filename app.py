@@ -22,6 +22,7 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
 messages = MessageController()
 chroma = VectorDbController()
 document_controller = DocumentController()
@@ -30,13 +31,13 @@ llm = LLMController()
 
 @app.get("/")
 def read_root():
-    return {"Hello": "World"}
+    return {"I have": "nothing!!!"}
 
 @app.get("/docs")
 def read_doc():
     pass
 
-@app.get("/health")
+@app.get("/health", summary="Проверка состояния подключения к БД")
 def status():
     try:
         with session() as db:
@@ -103,9 +104,6 @@ def get_message_by_chat(chat_id: int, message_id: int) -> JSONResponse:
     response = messages.get_chat_message(chat_id, message_id)
     return JSONResponse(content={"message": response}, status_code=200)
 
-@app.post("/chats/{chat_id}/messages/{message_id}",summary="Обновить сообщение чата")
-def update_message():
-    pass
 
 @app.delete("/chats/{chat_id}/messages/{message_id}",summary="Удалить сообщение чата")
 async def delete_message(chat_id: int, message_id: int):
@@ -117,6 +115,19 @@ async def delete_message(chat_id: int, message_id: int):
     :return: Код состояния
     """
     response = await messages.delete_chat_message(chat_id, message_id)
+    return Response(status_code=204)
+
+
+@app.patch("/chats/{chat_id}/messages/{message_id}",summary="Обновить сообщение чата")
+async def update_message(chat_id: int, message_id: int, request: Message) -> Response:
+    """
+    Обновление сообщения на сервере.
+
+    :param chat_id: ID чата
+    :param message_id: ID сообщения
+    :return: Код состояния
+    """
+    response = await messages.update_chat_message(chat_id, message_id, request)
     return Response(status_code=204)
 
 #Для ЛЛМ
@@ -134,16 +145,19 @@ def generate():
 #      ...
 #   }
 # }
-# 
-
-@app.post("/llm/switch-model",
-          summary="Cменить модель")
-def switch_model():
-    pass
+#
 
 @app.get("/llm/models",summary="Список моделей")
 def models_list():
-    pass
+    models = llm.get_models()
+    if models:
+        # {message: "LLM models get successfully", models: [{name: "qwen2.5:3b"}, {"name: deepseek-r1:1.5b"}]}
+        return JSONResponse(content={
+            'message': "LLM models get successfully",
+            'models': models}, status_code=200)
+    else:
+        return JSONResponse(content={"message": "LLM models get failed"}, status_code=404)
+
 
 #для эмбедингов
 @app.post("/embeddings",
@@ -159,8 +173,14 @@ def embeddings():
 @app.get("/embeddings/models",
          summary="Cписок моделей для генерации эмбеддингов")
 def embedding_models_list():
-    pass
-
+    embedding_models = llm.get_embedding_models()
+    if embedding_models:
+        # {message: "LLM embedding models get successfully", models: [{"name": "nomic-embed-text:latest"}]}
+        return JSONResponse(content={
+            'message': "LLM embedding models get successfully",
+            'models': embedding_models}, status_code=200)
+    else:
+        return JSONResponse(content={"message": "LLM models get failed"}, status_code=404)
 #Для хромы
 @app.post("/chroma/collections",
           summary="Создать коллекцию",
