@@ -4,7 +4,7 @@ from typing import Any, Dict
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain.retrievers.multi_query import MultiQueryRetriever
-from resources.controllers.llm import LLMController
+from resources.controllers.llm.llm_controller import LLMController
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +22,8 @@ class RAGPipeline:
         try:
             return MultiQueryRetriever.from_llm(
                 retriever=self.vector_db.as_retriever(),
-                llm=self.llm_controller.llm,
-                prompt=self.llm_controller.get_query_prompt()
+                llm=self.llm_manager.llm,
+                prompt=self.llm_manager.get_query_prompt()
             )
         except Exception as e:
             logger.error(f"Error setting up retriever: {e}")
@@ -34,8 +34,8 @@ class RAGPipeline:
         try:
             return (
                 {"context": self.retriever, "question": RunnablePassthrough()}
-                | self.llm_controller.get_rag_prompt()
-                | self.llm_controller.llm
+                | self.llm_manager.get_rag_prompt()
+                | self.llm_manager.llm
                 | StrOutputParser()
             )
         except Exception as e:
