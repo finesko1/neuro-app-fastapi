@@ -28,7 +28,7 @@ class VectorDbController:
         self.env = EnvironmentHelper()
         self.chroma_client = chromadb.HttpClient(
             host=self.env.chroma_host,
-            port=self.env.chroma_port
+            port=int(self.env.chroma_port)
         )
         self.embeddings = OllamaEmbeddings(base_url = self.env.ollama_url, model=self.env.ollama_embedding_model)
 
