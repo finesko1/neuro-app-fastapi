@@ -1,11 +1,11 @@
 """Функционал для работы с векторными вложениями и базой данных."""
 import logging
-from typing import List
+from typing import Any, List
 import chromadb.errors
 from fastapi import HTTPException, status
 import chromadb
 from langchain_ollama import OllamaEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain.vectorstores import Chroma 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from resources.models.llm.chroma.collection_create import CollectionCreate
 from resources.models.llm.chroma.search_query import SearchQuery
@@ -165,4 +165,37 @@ class VectorDbController:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Ошибка выполнения поиска: {str(e)}"
             )
+    
+    async def chroma_as_retriver(self, name: str) -> Any:
+        """
+        Преобразует коллекцию Chroma в retriever для поиска.
+
+        Args:
+            name (str): Название коллекции
+
+        Returns:
+            Any: Объект retriever
+
+        Raises:
+            HTTPException: При ошибке получения retriever
+        """
+        try:
+            retriver = Chroma(
+                collection_name=name,
+                client=self.chroma_client,
+                embedding_function=self.embeddings
+            ).as_retriever()
+            return retriver
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Коллекция {name} не найдена"
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Ошибка создания retriever: {str(e)}"
+            )
+
+    
         

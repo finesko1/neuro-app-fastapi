@@ -25,3 +25,4 @@ psycopg
 psycopg-binary
 asyncpg
 uvicorn
+bs4

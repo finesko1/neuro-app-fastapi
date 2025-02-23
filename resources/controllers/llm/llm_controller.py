@@ -9,28 +9,34 @@
                 }
             }
 """
-from typing import Dict, List
-
-from fastapi import HTTPException
+from typing import Any, Dict, List, Optional
+from langchain.retrievers.multi_query import MultiQueryRetriever
+from fastapi import HTTPException, status
 from langchain_ollama import ChatOllama
 from langchain.prompts import ChatPromptTemplate, PromptTemplate
 from langchain_ollama import OllamaEmbeddings
-from starlette.responses import JSONResponse
+import ollama
+from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage, AIMessage
 
+from starlette.responses import JSONResponse
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
 from resources.helpers.environment_helper import EnvironmentHelper
 import requests
 
-class LLMController:
-    def __init__(self):
-        self.env = EnvironmentHelper()
-        self.ollama_url = self.env.ollama_url
-        self.model_name = self.env.ollama_model
-        self.llm = ChatOllama(model=self.model_name,base_url=self.ollama_url)
-        self.llm_embenndings = OllamaEmbeddings(model=self.env.ollama_embedding_model, base_url= self.ollama_url)
-    
-    def get_query_prompt(self) -> PromptTemplate:
-        """Геттер для получения промпта при поиске в векторной базе данных."""
-        return PromptTemplate(
+EXITING_EMBEDDINGS_MODELS = [
+   "nomic-embed-text:latest",
+    "mxbai-embed-large",
+    "snowflake-arctic-embed",
+    "bge-m3",
+    "all-minilm",
+    "bge-large",
+    "paraphrase-multilingual",
+    "snowflake-arctic-embed2",
+    "granite-embedding"
+]
+
+QUERY_PROMPT=PromptTemplate(
             input_variables=["question"],
             template="""Вы - ассистент языковой модели искусственного интеллекта.
             Ваша задача - сгенерировать 2 различные версии заданного пользователем вопроса, чтобы извлечь соответствующие этому вопросу документы из векторной базы данных.
@@ -38,34 +44,118 @@ class LLMController:
             Предоставьте эти альтернативные вопросы, разделенные новыми строками. 
             Оригинальный вопрос: {question}""",
         )
-    
-    def get_rag_prompt(self) -> ChatPromptTemplate:
-        """Геттер для промпта раг запроса."""
-        template = """Ответьте на вопрос, основываясь ТОЛЬКО на следующем контексте:
-        {context}
-        Вопрос: {question}
-        """
-        return ChatPromptTemplate.from_template(template) 
 
-    def get_models(self) -> List:
+RAG_TEMPLATE= """Ответьте на вопрос, основываясь ТОЛЬКО на следующем контексте:
+{context}
+Вопрос: {question}
+"""
+
+
+class LLMController:
+    def __init__(self):
+        self.env = EnvironmentHelper()
+        self.ollama_url = self.env.ollama_url
+        self.model_name = self.env.ollama_model
+        self.ollama_client = ollama.Client(host=self.ollama_url)
+        self.llm = ChatOllama(model=self.model_name,base_url=self.ollama_url)
+        self.llm_embenndings = OllamaEmbeddings(model=self.env.ollama_embedding_model, base_url= self.ollama_url)
+    
+    
+    async def chat(self, messages: List[Dict[str, str]], system_prompt: Optional[str] = None) -> Dict:
+        """
+        Метод чата с поддержкой контекста предыдущих сообщений.
+    
+        Args:
+            messages (List[Dict[str, str]]): Список сообщений в формате [{"role": "user/assistant", "content": "text"}]
+            system_prompt (Optional[str]): Системный промпт
+    
+        Returns:
+            Dict: Ответ модели с сохранением контекста
+    
+        Raises:
+            HTTPException: При ошибке генерации ответа
+        """
+        try:
+            formatted_messages: List[BaseMessage] = []
+            
+            # Добавляем системный промпт если есть
+            if system_prompt:
+                formatted_messages.append(SystemMessage(content=system_prompt))
+            
+            # Преобразуем сообщения в формат langchain
+            for message in messages:
+                if message["role"] == "user":
+                    formatted_messages.append(HumanMessage(content=message["content"]))
+                elif message["role"] == "assistant":
+                    formatted_messages.append(AIMessage(content=message["content"]))
+            
+            # Генерируем ответ с учетом всего контекста
+            response = await self.llm.agenerate([formatted_messages])
+            
+            return {
+                "response": response.generations[0][0].text,
+                "model": self.model_name,
+                "messages": messages + [{"role": "assistant", "content": response.generations[0][0].text}]
+            }
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Ошибка генерации ответа: {str(e)}"
+            )
+    
+
+    async def chat_with_pdf(self, question: str, vector_retriver: Any) -> str:
+        """
+        Метод чата с контекстом из PDF документа.
+
+        Args:
+            question (str): Вопрос пользователя
+            vector_retriver (Any): Retriever для поиска в документе
+
+        Returns:
+            str: Ответ модели
+
+        Raises:
+            HTTPException: При ошибке генерации ответа
+        """
+        try:
+            retriever = MultiQueryRetriever.from_llm(
+                vector_retriver,
+                self.llm,
+                prompt=QUERY_PROMPT
+            )
+            
+            prompt = ChatPromptTemplate.from_template(RAG_TEMPLATE)
+            chain = (
+                {"context": retriever, "question": RunnablePassthrough()}
+                | prompt
+                | self.llm
+                | StrOutputParser()
+            )
+            
+            return await chain.ainvoke(question)
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Ошибка при обработке документа: {str(e)}"
+            )
+
+    async def get_models(self) -> List:
         """
         Поиск моделей для генерации ответа
 
         :return: Список моделей для генерации ответа
         """
-        url = self.env.ollama_url + '/api/tags'  # URL для запроса
         try:
-            response = requests.get(url)  # Выполняем GET-запрос
-            response.raise_for_status()  # Проверяем на наличие ошибок
+            response = self.ollama_client.list()
         except requests.exceptions.RequestException as e:
             raise HTTPException(status_code=404, detail=f"Ошибка при выполнении запроса: {e}")
 
         # Отбор названий моделей
-        models = response.json()
         model_names = []
-        for model in models['models']:
-            if model['name'] != 'nomic-embed-text:latest':
-                model_names.append({"name": model['name']})
+        for model in response["models"]:
+                if model["model"] != "nomic-embed-text:latest":
+                    model_names.append({"name": model["model"]})
         # Проверка наличия моделей
         if not model_names:
             raise HTTPException(status_code=404, detail="Модели не загружены")
@@ -77,29 +167,18 @@ class LLMController:
 
         :return: Список моделей для генерации embeddings
         """
-        url = self.env.ollama_url + '/api/tags'  # URL для запроса
         try:
-            response = requests.get(url)  # Выполняем GET-запрос
-            response.raise_for_status()  # Проверяем на наличие ошибок
+            response = self.ollama_client.list()
         except requests.exceptions.RequestException as e:
             raise HTTPException(status_code=404, detail=f"Ошибка при выполнении запроса: {e}")
-
-        # Список существующих моделей
-        existing_embedding_models = [
-            "mxbai-embed-large",
-            "nomic-embed-text",
-            "all-minilm"
-        ]
-
-        # Отбор существующих моделей для генерации
-        models = response.json()
+        
         embedding_models = []
         # Проверяем каждую полученную модель
-        for model in models['models']:
+        for model in response["models"]:
             # Проверяем, начинается ли имя модели с любого из ожидаемых
-            for existing_model in existing_embedding_models:
-                if model['name'].startswith(existing_model):
-                    embedding_models.append({"name": model['name']})
+            for existing_model in EXITING_EMBEDDINGS_MODELS:
+                if model["model"].startswith(existing_model):
+                    embedding_models.append({"name": model["model"]})
                     break
 
         # Проверка наличия моделей
