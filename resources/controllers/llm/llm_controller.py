@@ -25,7 +25,7 @@ from resources.helpers.environment_helper import EnvironmentHelper
 import requests
 
 EXITING_EMBEDDINGS_MODELS = [
-   "nomic-embed-text:latest",
+   "nomic-embed-text",
     "mxbai-embed-large",
     "snowflake-arctic-embed",
     "bge-m3",

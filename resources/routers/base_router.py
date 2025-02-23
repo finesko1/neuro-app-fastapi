@@ -41,6 +41,6 @@ async def test():
     Returns:
         Возвращает добавленные в хрому документы, далее можно семантический поиск выполнить
     """    
-    chunks = await get_document_chunks("___ __1.pdf")
+    chunks = await get_document_chunks("лаб2трпо.pdf")
     response = await chroma.add_to_collection(name="test123",document_chunks=chunks)
     return response
