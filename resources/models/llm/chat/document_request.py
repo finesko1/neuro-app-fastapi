@@ -1,5 +1,6 @@
+from typing import List
 from pydantic import BaseModel
 
 class DocumentChatRequest(BaseModel):
     question: str
-    collection_name: str
+    collection_names: List[str]

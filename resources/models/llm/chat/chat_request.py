@@ -7,3 +7,5 @@ from resources.models.llm.chat.message import Message
 class ChatRequest(BaseModel):
     messages: List[Message]
     system_prompt: Optional[str] = None
+    use_local_collection: Optional[bool] = None
+    use_global_collection: Optional[bool] = None

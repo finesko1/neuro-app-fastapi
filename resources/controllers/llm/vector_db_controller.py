@@ -196,6 +196,40 @@ class VectorDbController:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Ошибка создания retriever: {str(e)}"
             )
+        
+    async def chroma_as_retrievers(self, names: List[str]) -> List[Any]:
+        """
+        Преобразует коллекции Chroma в retriever для поиска.
+
+        Args:
+            names (List[str]): Список названий коллекций
+
+        Returns:
+            List[Any]: Список объектов retriever
+
+        Raises:
+            HTTPException: При ошибке получения retriever
+        """
+        retrievers = []
+        for name in names:
+            try:
+                retriever = Chroma(
+                    collection_name=name,
+                    client=self.chroma_client,
+                    embedding_function=self.embeddings
+                ).as_retriever()
+                retrievers.append(retriever)
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Коллекция {name} не найдена"
+                )
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Ошибка создания retriever для коллекции {name}: {str(e)}"
+                )
+        return retrievers
 
     
         

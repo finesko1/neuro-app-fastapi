@@ -109,6 +109,62 @@ class DocumentController:
                 detail=f"Ошибка при разделении документа на чанки: {str(e)}"
             )
 
+    async def upload_collection(self, files: List[UploadFile]) -> List[DocumentResponse]:
+        """
+        Загрузка коллекции документов с сохранением структуры папок.
+
+        Args:
+            files (List[UploadFile]): Список загружаемых файлов
+
+        Returns:
+            List[DocumentResponse]: Список результатов загрузки для каждого файла
+
+        Raises:
+            HTTPException: При общих ошибках сервера
+        """
+        responses = []
+        for file in files:
+            try:
+                if not file.filename.lower().endswith('.pdf'):
+                    responses.append(DocumentResponse(
+                        status="error",
+                        message="Поддерживаются только PDF файлы",
+                        document_id=file.filename
+                    ))
+                    continue
+
+                file_path = (self.upload_dir / file.filename).resolve()
+
+                if not file_path.is_relative_to(self.upload_dir.resolve()):
+                    responses.append(DocumentResponse(
+                        status="error",
+                        message="Недопустимый путь файла",
+                        document_id=file.filename
+                    ))
+                    continue
+
+                file_path.parent.mkdir(parents=True, exist_ok=True)
+
+                with open(file_path, "wb") as buffer:
+                    content = await file.read()
+                    buffer.write(content)
+
+                responses.append(DocumentResponse(
+                    status="success",
+                    message="Документ успешно загружен",
+                    document_id=file.filename
+                ))
+
+            except Exception as e:
+                logger.error(f"Ошибка загрузки {file.filename}: {str(e)}")
+                responses.append(DocumentResponse(
+                    status="error",
+                    message=f"Ошибка: {str(e)}",
+                    document_id=file.filename
+                ))
+        
+        return responses
+
     async def delete_document(self, document_id: str) -> DocumentResponse:
         """
         Удаление документа с сервера.

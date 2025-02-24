@@ -5,7 +5,15 @@ from sqlalchemy import text
 from starlette.responses import JSONResponse
 
 from database.connect import session, async_session
+
+# Модель сообщений для работы с БД
 from resources.models.chat.messages import Messages
+from resources.models.llm.chat.chat_request import ChatRequest
+# Модель получаемых данных request
+from resources.models.llm.chat.message import Message
+
+from resources.controllers.llm.llm_controller import LLMController
+llm = LLMController()
 
 class MessageController:
     def __init__(self):
@@ -26,8 +34,10 @@ class MessageController:
         """
         with session() as db:
             result = db.query(Messages).filter(Messages.chat_id == chat_id).all()
+
+            # Если сообщений не найдено, возвращаем пустой массив
             if not result:
-                raise HTTPException(status_code=404, detail=f"No messages found for (chat_id: {chat_id}).")
+                return []  # Возвращаем пустой массив вместо исключения
 
             messages = []
             for message in result:
@@ -73,7 +83,7 @@ class MessageController:
 
             return message
 
-    async def put_chat_message(self, chat_id: int, request) -> str:
+    async def put_chat_message(self, chat_id: int, request: ChatRequest):
         """
         Сохраняет сообщение в БД.
 
@@ -81,21 +91,42 @@ class MessageController:
         :param request: Объект запроса (Pydantic модель)
         :return: Результат операции
         """
-        async with async_session() as db:
-            # Создаем объект сообщения
+        # Создаем объект сообщения
+        if request.messages:
+            last_message = request.messages[-1]
             message = Messages(
                 chat_id=chat_id,
-                role=request.role,
-                content=request.content
+                role=last_message.role,
+                content=last_message.content
             )
+        else:
+            return "Массив сообщений не найден"
 
-        ollama_model = request.model
 
-            ## Добавляем и сохраняем сообщение
-            #db.add(message)
-            #await db.commit()
-            #await db.refresh(message)  # Обновляем объект данными из БД
-        return "Сообщение успешно добавлено"
+        # Получаем ответ от модели
+        assistant_message = await llm.chat(
+            request
+        )
+
+        # Создаем объект сообщения для ответа от модели
+        assistant_response_message = Messages(
+            chat_id=chat_id,
+            role="assistant",
+            content=assistant_message['response']
+        )
+
+        if assistant_response_message.content:
+            # Добавляем и сохраняем сообщение
+            async with async_session() as db:
+                db.add(message)
+                await db.commit()
+                await db.refresh(message)  # Обновляем объект данными из БД
+            # Добавляем и сохраняем ответ от модели
+                db.add(assistant_response_message)
+                await db.commit()
+                await db.refresh(assistant_response_message)
+
+        return assistant_message
 
     async def delete_chat_message(selfself, chat_id: int, message_id: int):
         """

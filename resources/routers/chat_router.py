@@ -2,8 +2,8 @@ from fastapi import APIRouter, HTTPException, Response, status
 from fastapi.responses import JSONResponse
 
 from resources.controllers.chat.message_controller import MessageController
+from resources.models.llm.chat.chat_request import ChatRequest
 from resources.models.llm.chat.message import Message
-
 router = APIRouter()
 messages = MessageController()
 #круд
@@ -22,7 +22,7 @@ def get_messages_by_chat(chat_id: int):
     return response
 
 @router.post("/chats/{chat_id}/messages", summary="Cоздать сообщение в чате")
-async def send_message(chat_id: int, request: Message) -> JSONResponse:
+async def send_message(chat_id: int, request: ChatRequest) -> JSONResponse:
     """
     Отправление сообщения на сервер.
 
@@ -31,7 +31,8 @@ async def send_message(chat_id: int, request: Message) -> JSONResponse:
     :return: Результат, код состояния
     """
     response = await messages.put_chat_message(chat_id, request)
-    return JSONResponse(content={"message": response}, status_code=201)
+
+    return JSONResponse(content={"message": response["response"]}, status_code=201)
 
 @router.get("/chats/{chat_id}/messages/{message_id}",summary="Получить сообщение чата")
 def get_message_by_chat(chat_id: int, message_id: int) -> JSONResponse:

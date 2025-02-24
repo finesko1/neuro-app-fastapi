@@ -24,10 +24,11 @@ async def chat(request: ChatRequest):
     Returns:
         Dict: Ответ модели и обновленная история сообщений
     """
-    return await llm.chat(
-        messages=[msg.model_dump() for msg in request.messages],
-        system_prompt=request.system_prompt
-    )
+    return await llm.chat(request)
+    # return await llm.chat(
+    #     messages=[msg.model_dump() for msg in request.messages],
+    #     system_prompt=request.system_prompt
+    # )
 
 @router.post("/chat/document", summary="Чат с RAG")
 async def chat_with_document(request: DocumentChatRequest):
@@ -42,7 +43,7 @@ async def chat_with_document(request: DocumentChatRequest):
     """
     vector_db = VectorDbController()
     try:
-        retriever = await vector_db.chroma_as_retriver(request.collection_name)
+        retriever = await vector_db.chroma_as_retrievers(request.collection_names)
         response = await llm.chat_with_pdf(request.question, retriever)
         return {"response": response}
     except Exception as e:
