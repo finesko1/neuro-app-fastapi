@@ -24,10 +24,11 @@ async def chat(request: ChatRequest):
     Returns:
         Dict: Ответ модели и обновленная история сообщений
     """
-    return await llm.chat(
-        messages=[msg.model_dump() for msg in request.messages],
-        system_prompt=request.system_prompt
-    )
+    return await llm.chat(request)
+    # return await llm.chat(
+    #     messages=[msg.model_dump() for msg in request.messages],
+    #     system_prompt=request.system_prompt
+    # )
 
 @router.post("/chat/document", summary="Чат с RAG")
 async def chat_with_document(request: DocumentChatRequest):

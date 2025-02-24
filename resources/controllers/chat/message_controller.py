@@ -102,10 +102,10 @@ class MessageController:
         else:
             return "Массив сообщений не найден"
 
+
         # Получаем ответ от модели
         assistant_message = await llm.chat(
-            messages=[msg.model_dump() for msg in request.messages],
-            system_prompt=request.system_prompt
+            request
         )
 
         # Создаем объект сообщения для ответа от модели

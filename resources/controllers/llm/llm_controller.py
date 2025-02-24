@@ -24,6 +24,8 @@ from langchain_core.runnables import RunnablePassthrough
 from resources.helpers.environment_helper import EnvironmentHelper
 import requests
 
+from resources.models.llm.chat.chat_request import ChatRequest
+
 EXITING_EMBEDDINGS_MODELS = [
    "nomic-embed-text:latest",
     "mxbai-embed-large",
@@ -60,8 +62,8 @@ class LLMController:
         self.llm = ChatOllama(model=self.model_name,base_url=self.ollama_url)
         self.llm_embenndings = OllamaEmbeddings(model=self.env.ollama_embedding_model, base_url= self.ollama_url)
     
-    
-    async def chat(self, messages: List[Dict[str, str]], system_prompt: Optional[str] = None) -> Dict:
+    #messages: List[Dict[str, str]], system_prompt: Optional[str] = None
+    async def chat(self, request: ChatRequest) -> Dict:
         """
         Метод чата с поддержкой контекста предыдущих сообщений.
     
@@ -80,23 +82,23 @@ class LLMController:
 
             # Устанавливаем модель
             self.model_name = None
-            for msg in reversed(messages):
-                if msg["role"] == "user":
-                    self.model_name = msg["model"]
+            for msg in reversed(request.messages):
+                if msg.role == "user":
+                    self.model_name = msg.model
                     break
             if self.model_name:
                 self.llm = ChatOllama(model=self.model_name, base_url=self.ollama_url)
 
             # Добавляем системный промпт если есть
-            if system_prompt:
-                formatted_messages.append(SystemMessage(content=system_prompt))
+            if request.system_prompt:
+                formatted_messages.append(SystemMessage(content=request.system_prompt))
 
             # Преобразуем сообщения в формат langchain
-            for message in messages:
-                if message["role"] == "user":
-                    formatted_messages.append(HumanMessage(content=message["content"]))
-                elif message["role"] == "assistant":
-                    formatted_messages.append(AIMessage(content=message["content"]))
+            for message in request.messages:
+                if message.role == "user":
+                    formatted_messages.append(HumanMessage(content=message.content))
+                elif message.role == "assistant":
+                    formatted_messages.append(AIMessage(content=message.content))
             
             # Генерируем ответ с учетом всего контекста
             response = await self.llm.agenerate([formatted_messages])
@@ -104,7 +106,7 @@ class LLMController:
             return {
                 "response": response.generations[0][0].text,
                 "model": self.model_name,
-                "messages": messages + [{"role": "assistant", "content": response.generations[0][0].text}]
+                "messages": request.messages + [{"role": "assistant", "content": response.generations[0][0].text}]
             }
         except Exception as e:
             raise HTTPException(
