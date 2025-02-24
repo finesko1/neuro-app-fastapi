@@ -64,6 +64,7 @@ async def get_document_chunks(id: str):
             summary="Удалить документ",
             response_description="Информация об удалении документа",
             response_model=DocumentResponse)
+
 async def delete_file(id: str):
     """
     Удаление документа с сервера.

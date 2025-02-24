@@ -77,11 +77,20 @@ class LLMController:
         """
         try:
             formatted_messages: List[BaseMessage] = []
-            
+
+            # Устанавливаем модель
+            self.model_name = None
+            for msg in reversed(messages):
+                if msg["role"] == "user":
+                    self.model_name = msg["model"]
+                    break
+            if self.model_name:
+                self.llm = ChatOllama(model=self.model_name, base_url=self.ollama_url)
+
             # Добавляем системный промпт если есть
             if system_prompt:
                 formatted_messages.append(SystemMessage(content=system_prompt))
-            
+
             # Преобразуем сообщения в формат langchain
             for message in messages:
                 if message["role"] == "user":
