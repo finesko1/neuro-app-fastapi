@@ -6,5 +6,6 @@ class DocumentResponse(BaseModel):
     """Модель ответа для операций с документами."""
     status: str
     message: str
-    document_id: Optional[str] = None
-    chunks: Optional[List[str]] = None
+    document_id: str
+    original_name: Optional[str] = None
+    file_extension: Optional[str] = None

@@ -3,8 +3,9 @@ import logging
 import os
 from pathlib import Path
 from typing import List
+import uuid
 from fastapi import HTTPException, status, UploadFile
-from langchain_community.document_loaders import UnstructuredPDFLoader, PyPDFLoader
+from langchain_community.document_loaders import UnstructuredPDFLoader, PyPDFLoader, CSVLoader, UnstructuredWordDocumentLoader, UnstructuredXMLLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.docstore.document import Document
 from resources.models.llm.chroma.document_response import DocumentResponse
@@ -23,6 +24,7 @@ class DocumentController:
         """
         self.upload_dir = Path(upload_dir)
         self.upload_dir.mkdir(parents=True, exist_ok=True)
+        self.allowed_extensions = {'.pdf', '.docx', '.csv', '.xml'}
         self.splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000,
             chunk_overlap=100
@@ -42,14 +44,18 @@ class DocumentController:
             HTTPException: При ошибке загрузки файла
         """
         try:
-            if not file.filename.lower().endswith('.pdf'):
+            file_extension = Path(file.filename).suffix.lower()
+            
+            if file_extension not in self.allowed_extensions:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Поддерживаются только PDF файлы"
+                    detail="Поддерживаются только файлы PDF, DOCX, CSV, XML"
                 )
-            
-            file_path = self.upload_dir / file.filename
-            
+
+            document_id = str(uuid.uuid4())
+            saved_filename = f"{document_id}{file_extension}"
+            file_path = self.upload_dir / saved_filename
+
             with open(file_path, "wb") as buffer:
                 content = await file.read()
                 buffer.write(content)
@@ -57,13 +63,14 @@ class DocumentController:
             return DocumentResponse(
                 status="success",
                 message="Документ успешно загружен",
-                document_id=file.filename
+                document_id=document_id,
+                original_name=file.filename,
+                file_extension=file_extension
             )
-            
+
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(f"Ошибка при загрузке файла: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Ошибка загрузки документа: {str(e)}"
@@ -85,28 +92,43 @@ class DocumentController:
         try:
             file_path = self.upload_dir / document_id
 
-            if not file_path.exists():
+            # for ext in self.allowed_extensions:
+            #     possible_path = self.upload_dir / f"{document_id}{ext}"
+            #     if possible_path.exists():
+            #         file_path = possible_path
+            #         break
+
+            if not file_path:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"Документ {document_id} не найден"
                 )
+
+            file_extension = file_path.suffix.lower()
             
-            loader = PyPDFLoader(str(file_path))
+            if file_extension == '.pdf':
+                loader = PyPDFLoader(str(file_path))
+            elif file_extension == '.docx':
+                loader = UnstructuredWordDocumentLoader(str(file_path))
+            elif file_extension == '.csv':
+                loader = CSVLoader(str(file_path))
+            elif file_extension == '.xml':
+                loader = UnstructuredXMLLoader(str(file_path))
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Неподдерживаемый формат файла"
+                )
+
             documents = loader.load()
-            
-            # Делим на чанки
-            chunks = self.splitter.split_documents(documents)
-            
-            logger.info(f"Документ {document_id} успешно разделен на {len(chunks)} чанков")
-            return chunks
-            
+            return self.splitter.split_documents(documents)
+
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(f"Ошибка при обработке документа: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Ошибка при разделении документа на чанки: {str(e)}"
+                detail=f"Ошибка обработки документа: {str(e)}"
             )
 
     async def upload_collection(self, files: List[UploadFile]) -> List[DocumentResponse]:
