@@ -43,7 +43,7 @@ async def chat_with_document(request: DocumentChatRequest):
     """
     vector_db = VectorDbController()
     try:
-        retriever = await vector_db.chroma_as_retriver(request.collection_name)
+        retriever = await vector_db.chroma_as_retrievers(request.collection_names)
         response = await llm.chat_with_pdf(request.question, retriever)
         return {"response": response}
     except Exception as e:

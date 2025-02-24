@@ -1,6 +1,7 @@
 import logging
 from fastapi import FastAPI
 
+from resources.routers.global_router import router as global_router
 from resources.routers.chat_router import router as chat_router
 from resources.routers.files_router import get_document_chunks, router as files_router
 from resources.routers.chroma_router import router as chroma_router
@@ -19,3 +20,4 @@ app.include_router(llm_router,tags=["llm"])
 app.include_router(chat_router, tags=["chat"])
 app.include_router(files_router,tags=["files"])
 app.include_router(chroma_router,tags=["chroma"])
+app.include_router(global_router, tags=["global"]) 

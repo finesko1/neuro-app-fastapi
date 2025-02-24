@@ -17,6 +17,7 @@ from langchain.prompts import ChatPromptTemplate, PromptTemplate
 from langchain_ollama import OllamaEmbeddings
 import ollama
 from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage, AIMessage
+from langchain.retrievers import EnsembleRetriever
 
 from starlette.responses import JSONResponse
 from langchain_core.output_parsers import StrOutputParser
@@ -115,13 +116,13 @@ class LLMController:
             )
     
 
-    async def chat_with_pdf(self, question: str, vector_retriver: Any) -> str:
+    async def chat_with_pdf(self, question: str, vector_retrievers: List[Any]) -> str:
         """
-        Метод чата с контекстом из PDF документа.
+        Метод чата с контекстом из нескольких PDF документов.
 
         Args:
             question (str): Вопрос пользователя
-            vector_retriver (Any): Retriever для поиска в документе
+            vector_retrievers (List[Any]): Список ретриверов для поиска в документах
 
         Returns:
             str: Ответ модели
@@ -130,12 +131,14 @@ class LLMController:
             HTTPException: При ошибке генерации ответа
         """
         try:
-            retriever = MultiQueryRetriever.from_llm(
-                vector_retriver,
-                self.llm,
-                prompt=QUERY_PROMPT
-            )
-            
+            if len(vector_retrievers) == 1:
+                retriever = MultiQueryRetriever.from_llm(
+                    vector_retrievers[0],
+                    self.llm,
+                    prompt=QUERY_PROMPT
+                )
+            else:
+                retriever = EnsembleRetriever(retrievers=vector_retrievers)
             prompt = ChatPromptTemplate.from_template(RAG_TEMPLATE)
             chain = (
                 {"context": retriever, "question": RunnablePassthrough()}
@@ -143,7 +146,6 @@ class LLMController:
                 | self.llm
                 | StrOutputParser()
             )
-            
             return await chain.ainvoke(question)
         except Exception as e:
             raise HTTPException(

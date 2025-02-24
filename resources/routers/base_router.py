@@ -30,17 +30,3 @@ def status():
 @router.get("/metrics")
 def metrics():
     pass
-
-
-#тест
-chroma = VectorDbController()
-@router.post("/test/add-doc")
-async def test():
-    """Тестовый метод
-
-    Returns:
-        Возвращает добавленные в хрому документы, далее можно семантический поиск выполнить
-    """    
-    chunks = await get_document_chunks("лаб4трпо.pdf")
-    response = await chroma.add_to_collection(name="test123",document_chunks=chunks)
-    return response

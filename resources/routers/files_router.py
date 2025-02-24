@@ -36,6 +36,11 @@ async def upload_file(file: UploadFile = File(...)):
     response = await document_controller.upload_document(file)
     return response
 
+@router.post("/files/upload-collection")
+async def upload_collection(files: List[UploadFile] = File(...)):
+    response = await document_controller.upload_collection(files)
+    return response
+
 @router.get("/files/{id}/get",
          summary="Получить чанки документа",
          response_description="Список чанков документа",
