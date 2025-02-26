@@ -202,7 +202,7 @@ class DocumentController:
         """
         try:
             file_path = self.upload_dir / document_id
-            
+            file_extension = file_path.suffix.lower()
             if not file_path.exists():
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -213,7 +213,9 @@ class DocumentController:
             
             return DocumentResponse(
                 status="success",
-                message=f"Документ {document_id} успешно удален"
+                message=f"Документ {document_id} успешно удален",
+                document_id=document_id,
+                file_extension=file_extension
             )
             
         except HTTPException:

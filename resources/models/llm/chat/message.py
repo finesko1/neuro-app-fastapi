@@ -8,3 +8,5 @@ class Message(BaseModel):
     role: str = Field(..., pattern="^(user|assistant|system)$")
     content: str
     model: Optional[str] = None
+    global_collection: Optional[str] = None
+    local_collection: Optional[str] = None

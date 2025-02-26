@@ -11,4 +11,3 @@ class ChatRequest(BaseModel):
     use_global_collection: Optional[bool] = None
     global_collection: Optional[str] = None
     local_collection: Optional[str] = None
-

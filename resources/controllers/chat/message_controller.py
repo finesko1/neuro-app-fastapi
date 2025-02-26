@@ -46,6 +46,8 @@ class MessageController:
                     "role": message.role,
                     "chat_id": message.chat_id,
                     "content": message.content,
+                    "global_collection": message.global_collection,
+                    "local_collection": message.local_collection
                 })
 
             return messages
@@ -78,7 +80,9 @@ class MessageController:
                 "id": result.id,
                 "role": result.role,
                 "chat_id": result.chat_id,
-                "content": result.content
+                "content": result.content,
+                "global_collection": message.global_collection,
+                "local_collection": message.local_collection
             }
 
             return message
@@ -97,14 +101,16 @@ class MessageController:
             message = Messages(
                 chat_id=chat_id,
                 role=last_message.role,
-                content=last_message.content
+                content=last_message.content,
+                global_collection=last_message.global_collection,
+                local_collection=last_message.local_collection
             )
         else:
             return "Массив сообщений не найден"
 
 
         # Получаем ответ от модели
-        assistant_message = await llm.chat(
+        assistant_message = await llm.unified_chat(
             request
         )
 

@@ -114,11 +114,9 @@ class LLMController:
                 elif message.role == "assistant":
                     formatted_messages.append(AIMessage(content=message.content))
             
-            # Определяем, нужно ли использовать RAG
             use_rag = vector_retrievers is not None and len(vector_retrievers) > 0
             
             if use_rag:
-                # Создаем ретривер в зависимости от количества источников
                 if len(vector_retrievers) == 1:
                     retriever = MultiQueryRetriever.from_llm(
                         vector_retrievers[0],
@@ -128,24 +126,22 @@ class LLMController:
                 else:
                     retriever = EnsembleRetriever(retrievers=vector_retrievers)
                 
-                # Получаем контекст из документов
-                retrieved_docs = await retriever.ainvoke(last_user_message)
-                context = "\n\n".join([doc.page_content for doc in retrieved_docs])
+                prompt = ChatPromptTemplate.from_template(RAG_TEMPLATE)
+                chain = (
+                    {"context": retriever, "question": RunnablePassthrough()}
+                    | prompt
+                    | self.llm
+                    | StrOutputParser()
+                )
                 
-                # Добавляем контекст к последнему сообщению пользователя
-                enhanced_messages = formatted_messages.copy()
+                # Получаем ответ с использованием RAG
+                rag_response = await chain.ainvoke(last_user_message)
                 
-                # Заменяем последнее сообщение пользователя на сообщение с контекстом
-                for i in range(len(enhanced_messages) - 1, -1, -1):
-                    if isinstance(enhanced_messages[i], HumanMessage):
-                        enhanced_messages[i] = HumanMessage(content=RAG_TEMPLATE.format(
-                            context=context,
-                            question=enhanced_messages[i].content
-                        ))
-                        break
-                    
-                # Генерируем ответ с учетом контекста из документов
-                response = await self.llm.agenerate([enhanced_messages])
+                return {
+                    "response": rag_response,
+                    "model": self.model_name,
+                    "messages": request.messages + [{"role": "assistant", "content": rag_response}]
+                }
             else:
                 # Обычный чат без RAG
                 response = await self.llm.agenerate([formatted_messages])
@@ -161,39 +157,6 @@ class LLMController:
                 detail=f"Ошибка генерации ответа: {str(e)}"
             )
     
-        # Сохраняем старые методы для обратной совместимости
-    async def chat(self, request: ChatRequest) -> Dict:
-        """
-        Метод чата с поддержкой контекста предыдущих сообщений.
-        
-        Args:
-            request (ChatRequest): Запрос чата с сообщениями и настройками
-        
-        Returns:
-            Dict: Ответ модели с сохранением контекста
-        """
-        return await self.unified_chat(request)
-    
-    async def chat_with_pdf(self, question: str, vector_retrievers: List[Any]) -> str:
-       """
-       Метод чата с контекстом из нескольких PDF документов.
-
-       Args:
-           question (str): Вопрос пользователя
-           vector_retrievers (List[Any]): Список ретриверов для поиска в документах
-
-       Returns:
-           str: Ответ модели
-       """
-       # Создаем ChatRequest из вопроса
-       request = ChatRequest(
-           messages=[{"role": "user", "content": question}],
-           system_prompt=None
-       )
-       
-       # Используем унифицированный метод
-       response = await self.unified_chat(request, vector_retrievers)
-       return response["response"]
     #messages: List[Dict[str, str]], system_prompt: Optional[str] = None
     # async def chat(self, request: ChatRequest) -> Dict:
     #     """

@@ -14,60 +14,99 @@ llm = LLMController()
 
 #llm генерация 
 @router.post("/chat", response_model=Dict, summary="Чат на основе массива сообщений")
-async def chat(request: ChatRequest):
+async def unified_chat(request: ChatRequest):
     """
-    Endpoint для чата с поддержкой контекста.
-
+    Унифицированный endpoint для чата с опциональной поддержкой RAG.
+    
+    Если в запросе указаны флаги use_global_collection или use_local_collection,
+    будет использован механизм RAG с соответствующими коллекциями.
     Args:
-        request (ChatRequest): Запрос с историей сообщений и опциональным системным промптом
-
+        request (ChatRequest): Запрос с историей сообщений, системным промптом
+                              и опциональными параметрами для RAG
+    
     Returns:
         Dict: Ответ модели и обновленная история сообщений
     """
-    return await llm.chat(request)
-    # return await llm.chat(
-    #     messages=[msg.model_dump() for msg in request.messages],
-    #     system_prompt=request.system_prompt
-    # )
-
-@router.post("/chat/document", summary="Чат с RAG")
-async def chat_with_document(request: DocumentChatRequest):
-    """
-    Endpoint для чата с контекстом из документа.
-
-    Args:
-        request (DocumentChatRequest): Запрос с вопросом и названием коллекции
-
-    Returns:
-        Dict: Ответ модели с учетом контекста документа
-    """
-    vector_db = VectorDbController()
-    try:
-        retriever = await vector_db.chroma_as_retrievers(request.collection_names)
-        response = await llm.chat_with_pdf(request.question, retriever)
-        return {"response": response}
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
-    
-#Для ЛЛМ
-@router.post("/llm/generate",
-          summary="Генерация ответа")
-def generate():
-    pass
-#  Примерчик структурированного запроса
+# тест
 # {
-#   "prompt": "Как работает гравитация?",
-#   "context": ["предыдущие сообщения"],
-#   "params": {
-#     "temperature": 0.7,
-#     "max_tokens": 500,
-#      ...
-#   }
-# }
-#
+#           "messages": [
+#             {
+#                 "id": 1,
+#                 "role": "user",
+#                 "chat_id": 1,
+#                 "content": "Ты кто?",
+#                 "global_collection": null,
+#                 "local_collection": null
+#             },
+#             {
+#                 "id": 2,
+#                 "role": "assistant",
+#                 "chat_id": 1,
+#                 "content": "Я виртуальный ассистент, созданный для помощи в ответах на вопросы и выполнения различных задач. Могу ли я чем-то помочь вам сегодня?",
+#                 "global_collection": null,
+#                 "local_collection": null
+#             },
+#             {
+#                 "id": 3,
+#                 "role": "user",
+#                 "chat_id": 1,
+#                 "content": "Какие лабораторные есть в коллекциях? ответь кратко",
+#                 "global_collection": "global123",
+#                 "local_collection": "test123"
+#             }
+#           ],
+#           "system_prompt": "string",
+#           "use_local_collection": true,
+#           "use_global_collection": true,
+#           "global_collection": "global123",
+#           "local_collection": "test123"
+#         }
+
+    if request.use_global_collection or request.use_local_collection:
+        vector_db = VectorDbController()
+        try:
+            collection_names = []
+            
+            if request.use_global_collection and request.global_collection:
+                collection_names.append(request.global_collection)
+                
+            if request.use_local_collection and request.local_collection:
+                collection_names.append(request.local_collection)
+            
+            if collection_names:
+                retrievers = await vector_db.chroma_as_retrievers(collection_names)
+                return await llm.unified_chat(request, retrievers)
+            
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Ошибка при работе с векторной базой данных: {str(e)}"
+            )
+        
+    return await llm.unified_chat(request)
+
+# @router.post("/chat/document", summary="Чат с RAG")
+# async def chat_with_document(request: DocumentChatRequest):
+#     """
+#     Endpoint для чата с контекстом из документа.
+
+#     Args:
+#         request (DocumentChatRequest): Запрос с вопросом и названием коллекции
+
+#     Returns:
+#         Dict: Ответ модели с учетом контекста документа
+#     """
+#     vector_db = VectorDbController()
+#     try:
+#         retriever = await vector_db.chroma_as_retrievers(request.collection_names)
+#         response = await llm.chat_with_pdf(request.question, retriever)
+#         return {"response": response}
+#     except Exception as e:
+#         raise HTTPException(
+#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             detail=str(e)
+#         )
+    
 
 @router.get("/llm/models",summary="Список моделей")
 async def models_list():

@@ -25,8 +25,10 @@ class Messages(Base):
     chat_id: Mapped[int] = mapped_column(ForeignKey('chats.id'), nullable=False)
     role: Mapped[str] = mapped_column(nullable=False)
     content: Mapped[str] = mapped_column(nullable=False)
+    global_collection: Mapped[str] = mapped_column(nullable=True)
+    local_collection: Mapped[str] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=func.now(), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(default=func.now(), onupdate=func.now(), nullable=True)
 
     def __repr__(self):
-        return f"<Messages(id={self.id}, chat_id={self.chat_id}, role={self.role}, content={self.content} created_at={self.created_at}, updated_at={self.updated_at})>"
+        return f"<Messages(id={self.id}, chat_id={self.chat_id}, role={self.role}, content={self.content},global_collection={self.global_collection},local_collection={self.local_collection} created_at={self.created_at}, updated_at={self.updated_at})>"
