@@ -1,16 +1,11 @@
-import logging
-from fastapi import Request, HTTPException
+from fastapi import HTTPException
 from sqlalchemy.future import select
-from sqlalchemy import text
-from starlette.responses import JSONResponse
 
 from database.connect import session, async_session
 
 # Модель сообщений для работы с БД
 from resources.models.chat.messages import Messages
 from resources.models.llm.chat.chat_request import ChatRequest
-# Модель получаемых данных request
-from resources.models.llm.chat.message import Message
 
 from resources.controllers.llm.llm_controller import LLMController
 llm = LLMController()
@@ -81,8 +76,8 @@ class MessageController:
                 "role": result.role,
                 "chat_id": result.chat_id,
                 "content": result.content,
-                "global_collection": message.global_collection,
-                "local_collection": message.local_collection
+                "global_collection": result.global_collection,
+                "local_collection": result.local_collection
             }
 
             return message
