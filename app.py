@@ -1,9 +1,8 @@
-import logging
 from fastapi import FastAPI
 
 from resources.routers.global_router import router as global_router
 from resources.routers.chat_router import router as chat_router
-from resources.routers.files_router import get_document_chunks, router as files_router
+from resources.routers.files_router import router as files_router
 from resources.routers.chroma_router import router as chroma_router
 from resources.routers.base_router import router as base_router
 from resources.routers.llm_router import router as llm_router
