@@ -1,9 +1,10 @@
-from fastapi import HTTPException
+from fastapi import HTTPException,status
 from sqlalchemy.future import select
 
 from database.connect import session, async_session
 
 # Модель сообщений для работы с БД
+from resources.controllers.llm.vector_db_controller import VectorDbController
 from resources.models.chat.messages import Messages
 from resources.models.llm.chat.chat_request import ChatRequest
 
@@ -103,10 +104,16 @@ class MessageController:
         else:
             return "Массив сообщений не найден"
 
+        retrievers = []
+        collection_names = []
+        vector_db = VectorDbController()
+        last_message = request.messages[-1]
+        collection_names.append(last_message.local_collection)
+        retrievers = await vector_db.chroma_as_retrievers(collection_names)
 
         # Получаем ответ от модели
         assistant_message = await llm.unified_chat(
-            request
+            request,retrievers
         )
 
         # Создаем объект сообщения для ответа от модели

@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import mimetypes
 from pathlib import Path
 from typing import List, Optional
@@ -115,6 +116,31 @@ class DocumentController:
 
         return JSONResponse(content=response_data, status_code=status_code)
 
+    async def get_documents_list(self,chat_id:int):
+        # Поиск документов в БД
+        async with async_session() as db:
+            response = await db.execute(select(UploadFilesModel).where(UploadFilesModel.chat_id == chat_id))
+            documents_info = response.scalars().fetchall()
+
+        # Проверка наличия документов
+        if not documents_info:
+            raise HTTPException(status_code=404, detail="Documents not found")
+
+        # Формирование списка документов с информацией
+        documents = []
+        for document in documents_info:
+            # Получаем расширение файла для определения типа
+            file_extension = Path(document.original_name).suffix.lower()
+
+            documents.append({
+                "id": document.id,
+                "chat_id": document.chat_id,
+                "path": document.path,
+                "original_name": document.original_name,
+                "file_extension": file_extension
+            })
+
+        return documents
     async def get_documents(self, chat_id: int):
         """
         Получение списка документов для указанного чата.
@@ -196,7 +222,7 @@ class DocumentController:
             filename=document.original_name
         )
 
-    async def get_document_chunks(self, document_id: str) -> List[Document]:
+    async def get_document_chunks(self, document_path: str) -> List[Document]:
         """
         Разделение документа на чанки.
 
@@ -210,7 +236,7 @@ class DocumentController:
             HTTPException: Если документ не найден или при ошибке обработки
         """
         try:
-            file_path = self.upload_dir / document_id
+            file_path = document_path
 
             # for ext in self.allowed_extensions:
             #     possible_path = self.upload_dir / f"{document_id}{ext}"
@@ -221,10 +247,12 @@ class DocumentController:
             if not file_path:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Документ {document_id} не найден"
+                    detail=f"Документ {document_path} не найден"
                 )
 
-            file_extension = file_path.suffix.lower()
+            pattern = r'(\.[^.]+)$'
+            match = re.search(pattern, file_path)
+            file_extension = match.group(1)
 
             if file_extension == '.pdf':
                 loader = PyPDFLoader(str(file_path))

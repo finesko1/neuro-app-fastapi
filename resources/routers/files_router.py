@@ -30,13 +30,6 @@ async def upload_files(chat_id: int, files: Annotated[List[UploadFile], File(des
     response = await document_controller.upload_documents(chat_id, files)
     return response
 
-
-@router.post("/files/upload-collection")
-async def upload_collection(files: List[UploadFile] = File(...)):
-    response = await document_controller.upload_collection(files)
-    return response
-
-
 @router.get("/files/{chat_id}/{document_id}", summary="Получение документа")
 async def get_file(
         chat_id: int,

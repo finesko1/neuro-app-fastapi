@@ -41,7 +41,7 @@ async def add_collection(collection_data: CollectionCreate):
     response = await chroma.add_collection(collection_data)
     return response
 
-@router.delete("/chroma/collections/{name}",
+@router.delete("/chroma/collections/{collection_name}",
             summary="Удалить коллекцию")
 async def delete_collection(collection_name:str):
     """
