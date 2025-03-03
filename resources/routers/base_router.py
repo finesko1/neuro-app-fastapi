@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException
 from resources.controllers.llm.vector_db_controller import VectorDbController
-from resources.routers.files_router import get_document_chunks
 from sqlalchemy import text
 from database.connect import session
 
