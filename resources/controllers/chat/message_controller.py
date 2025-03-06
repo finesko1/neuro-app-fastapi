@@ -104,19 +104,26 @@ class MessageController:
         else:
             return "Массив сообщений не найден"
 
-        retrievers = []
+        
         collection_names = []
         vector_db = VectorDbController()
+
         last_message = request.messages[-1]
-        collection_names.append(last_message.local_collection)
-        retrievers = await vector_db.chroma_as_retrievers(collection_names)
+        retrievers = []
 
-        # Получаем ответ от модели
-        assistant_message = await llm.unified_chat(
-            request,retrievers
-        )
+        if request.use_local_collection == True:
+            collection_names.append(last_message.local_collection)
+            retrievers = await vector_db.chroma_as_retrievers(collection_names)
 
-        # Создаем объект сообщения для ответа от модели
+        if request.use_global_collection == True:
+            collection_names.append(last_message.global_collection)
+            retrievers = await vector_db.chroma_as_retrievers(collection_names)
+
+        if retrievers:
+            assistant_message = await llm.unified_chat(request, retrievers)
+        else:
+            assistant_message = await llm.unified_chat(request)
+
         assistant_response_message = Messages(
             chat_id=chat_id,
             role="assistant",
