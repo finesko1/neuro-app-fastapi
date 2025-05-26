@@ -19,6 +19,9 @@ import ollama
 from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage, AIMessage
 from langchain.retrievers import EnsembleRetriever
 
+from langchain_core.caches import BaseCache
+from langchain_community.chat_models.ollama import ChatOllama
+
 from starlette.responses import JSONResponse
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
@@ -26,6 +29,8 @@ from resources.helpers.environment_helper import EnvironmentHelper
 import requests
 
 from resources.models.llm.chat.chat_request import ChatRequest
+
+ChatOllama.model_rebuild()
 
 EXITING_EMBEDDINGS_MODELS = [
    "nomic-embed-text",
