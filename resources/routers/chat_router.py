@@ -34,6 +34,19 @@ async def send_message(chat_id: int, request: ChatRequest) -> JSONResponse:
 
     return JSONResponse(content={"message": response["response"]}, status_code=201)
 
+@router.post("/chats/{chat_id}/survey_messages", summary="Cоздать сообщение в чате")
+async def send_message(chat_id: int, request: ChatRequest) -> JSONResponse:
+    """
+    Отправление сообщения на сервер.
+
+    :param chat_id: ID чата
+    :param request: Объект запроса
+    :return: Результат, код состояния
+    """
+    response = await messages.put_chat_message_survey(chat_id, request)
+
+    return JSONResponse(content={"message": response["response"]}, status_code=201)
+
 @router.get("/chats/{chat_id}/messages/{message_id}",summary="Получить сообщение чата")
 def get_message_by_chat(chat_id: int, message_id: int) -> JSONResponse:
     """

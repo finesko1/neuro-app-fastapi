@@ -143,6 +143,34 @@ class MessageController:
 
         return assistant_message
 
+    async def put_chat_message_survey(self, chat_id: int, request: ChatRequest):
+        """
+        Сохраняет сообщение в БД.
+
+        :param chat_id: ID чата
+        :param request: Объект запроса (Pydantic модель)
+        :return: Результат операции
+        """
+        # Создаем объект сообщения
+        if request.messages:
+            last_message = request.messages[-1]
+            message = Messages(
+                chat_id=chat_id,
+                role=last_message.role,
+                content=last_message.content,
+                global_collection=last_message.global_collection,
+                local_collection=last_message.local_collection
+            )
+        else:
+            return "Массив сообщений не найден"
+
+
+        last_message = request.messages[-1]
+
+        assistant_message = await llm.unified_chat(request)
+
+        return assistant_message
+    
     async def delete_chat_message(selfself, chat_id: int, message_id: int):
         """
         Удаляет сообщения из чата БД

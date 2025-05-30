@@ -163,7 +163,7 @@ class LLMController:
             )
     
     #messages: List[Dict[str, str]], system_prompt: Optional[str] = None
-    # async def chat(self, request: ChatRequest) -> Dict:
+    # async def chat_survey(self, request) -> Dict:
     #     """
     #     Метод чата с поддержкой контекста предыдущих сообщений.
     
